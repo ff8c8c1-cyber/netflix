@@ -36,8 +36,15 @@ const SectPage = () => {
             const res = await fetch(`${API_BASE_URL}/api/sects/my?userId=${userId}`);
             if (res.ok) {
                 const data = await res.json();
-                setMySectData(data);
-                setView('dashboard');
+                // Check if user actually has a sect (API returns null if no sect)
+                if (data && data.sect) {
+                    setMySectData(data);
+                    setView('dashboard');
+                } else {
+                    // User hasn't joined a sect yet
+                    setView('lobby');
+                    fetchSects();
+                }
             } else {
                 setView('lobby');
                 fetchSects();
@@ -48,6 +55,7 @@ const SectPage = () => {
             fetchSects();
         }
     };
+
 
     const fetchSects = async () => {
         try {
