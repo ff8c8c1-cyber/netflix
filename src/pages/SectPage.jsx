@@ -479,500 +479,517 @@ const SectPage = () => {
     }
 
 
-    // --- DASHBOARD VIEW ---
-    if (!mySectData) {
+    // Check view state first
+    if (view === 'loading') {
         return <div className="text-white p-8">Đang tải dữ liệu...</div>;
     }
 
-    const { sect, member, members, buildings } = mySectData;
-    const isLeader = member?.Role === 'Leader' || member?.Role === 'Elder';
+    if (view === 'lobby') {
+        // Lobby view will be rendered below
+        // Continue to lobby return statement
+    }
+
+    // --- DASHBOARD VIEW ---
+    // Only check mySectData if we're in dashboard view
+    if (view === 'dashboard' && !mySectData) {
+        return <div className="text-white p-8">Đang tải dữ liệu tông môn...</div>;
+    }
+
+    if (view === 'dashboard') {
+        const { sect, member, members, buildings } = mySectData;
+        const isLeader = member?.Role === 'Leader' || member?.Role === 'Elder';
 
 
-    return (
-        <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 ml-0 md:ml-64">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-8 mb-8 border border-gray-700 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                <div className="relative z-10 flex justify-between items-start">
-                    <div>
-                        <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 mb-2">
-                            {sect.Name}
-                        </h1>
-                        <p className="text-gray-400 max-w-2xl italic">"{sect.Description}"</p>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-3xl font-bold text-yellow-400 mb-1">Lv.{sect.Level}</div>
-                        <div className="flex items-center gap-2 justify-end text-gray-300 bg-black/30 px-4 py-1 rounded-full">
-                            <Database size={16} className="text-blue-400" />
-                            <span>Tài Nguyên: {sect.Resources}</span>
+        return (
+            <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 ml-0 md:ml-64">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-8 mb-8 border border-gray-700 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                    <div className="relative z-10 flex justify-between items-start">
+                        <div>
+                            <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 mb-2">
+                                {sect.Name}
+                            </h1>
+                            <p className="text-gray-400 max-w-2xl italic">"{sect.Description}"</p>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-3xl font-bold text-yellow-400 mb-1">Lv.{sect.Level}</div>
+                            <div className="flex items-center gap-2 justify-end text-gray-300 bg-black/30 px-4 py-1 rounded-full">
+                                <Database size={16} className="text-blue-400" />
+                                <span>Tài Nguyên: {sect.Resources}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* MAP VIEW */}
-            <div className="mb-8">
-                <SectMap buildings={buildings} onSelectBuilding={handleSelectBuilding} />
-            </div>
+                {/* MAP VIEW */}
+                <div className="mb-8">
+                    <SectMap buildings={buildings} onSelectBuilding={handleSelectBuilding} />
+                </div>
 
-            {/* Navigation */}
-            <div className="flex gap-4 mb-8 border-b border-gray-700 pb-1 overflow-x-auto">
-                {[
-                    { id: 'overview', icon: Activity, label: 'Tổng Quan' },
-                    { id: 'members', icon: Users, label: 'Thành Viên' },
-                    { id: 'facilities', icon: Map, label: 'Kiến Trúc' },
-                    { id: 'missions', icon: Book, label: 'Nhiệm Vụ' },
-                    { id: 'pavilion', icon: Book, label: 'Tàng Kinh Các' },
-                    { id: 'shop', icon: Database, label: 'Tàng Bảo Các' },
-                    { id: 'auction', icon: Star, label: 'Đấu Giá' },
-                    { id: 'blackmarket', icon: Zap, label: 'Chợ Đen' }
-                ].map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`px-6 py-3 flex items-center gap-2 font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === tab.id
-                            ? 'border-blue-500 text-blue-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-300'
-                            }`}
-                    >
-                        <tab.icon size={20} /> {tab.label}
-                    </button>
-                ))}
-            </div>
+                {/* Navigation */}
+                <div className="flex gap-4 mb-8 border-b border-gray-700 pb-1 overflow-x-auto">
+                    {[
+                        { id: 'overview', icon: Activity, label: 'Tổng Quan' },
+                        { id: 'members', icon: Users, label: 'Thành Viên' },
+                        { id: 'facilities', icon: Map, label: 'Kiến Trúc' },
+                        { id: 'missions', icon: Book, label: 'Nhiệm Vụ' },
+                        { id: 'pavilion', icon: Book, label: 'Tàng Kinh Các' },
+                        { id: 'shop', icon: Database, label: 'Tàng Bảo Các' },
+                        { id: 'auction', icon: Star, label: 'Đấu Giá' },
+                        { id: 'blackmarket', icon: Zap, label: 'Chợ Đen' }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`px-6 py-3 flex items-center gap-2 font-bold transition-all border-b-2 whitespace-nowrap ${activeTab === tab.id
+                                ? 'border-blue-500 text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-300'
+                                }`}
+                        >
+                            <tab.icon size={20} /> {tab.label}
+                        </button>
+                    ))}
+                </div>
 
-            {/* Content Area */}
-            <div className="bg-gray-800/50 rounded-xl p-6 min-h-[500px]">
+                {/* Content Area */}
+                <div className="bg-gray-800/50 rounded-xl p-6 min-h-[500px]">
 
-                {/* OVERVIEW TAB */}
-                {activeTab === 'overview' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-                            <h3 className="text-xl font-bold mb-4 text-yellow-400 flex items-center gap-2">
-                                <Crown size={20} /> Thông Tin Cá Nhân
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Vai Trò:</span>
-                                    <span className="font-bold text-white">{member.Role}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Cống Hiến:</span>
-                                    <span className="font-bold text-green-400">{member.Contribution}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Gia Nhập:</span>
-                                    <span className="text-gray-300">{new Date(member.JoinedAt).toLocaleDateString()}</span>
-                                </div>
-                            </div>
-                            <div className="mt-6 pt-6 border-t border-gray-700">
-                                <h4 className="font-bold mb-3 text-gray-300 flex justify-between">
-                                    <span>Đóng Góp Tài Nguyên</span>
-                                    <span className="text-yellow-400 text-sm">Hiện có: {userStones} Linh Thạch</span>
-                                </h4>
-                                <div className="flex gap-2 mb-4">
-                                    <button onClick={() => handleContribute(100)} className="flex-1 py-2 bg-gray-700 hover:bg-green-700 rounded text-sm font-bold">
-                                        100 Đá
-                                    </button>
-                                    <button onClick={() => handleContribute(1000)} className="flex-1 py-2 bg-gray-700 hover:bg-green-600 rounded text-sm font-bold">
-                                        1000 Đá
-                                    </button>
-                                </div>
-
-                                <h4 className="font-bold mb-3 text-gray-300">Lương Bổng Hàng Ngày</h4>
-                                <div className="bg-black/20 p-3 rounded flex justify-between items-center">
-                                    <div className="text-sm">
-                                        <div className="text-gray-400">Vai trò: <span className="text-white font-bold">{member.Role}</span></div>
-                                        <div className="text-yellow-400 text-xs mt-1">
-                                            {member.Role === 'Leader' ? '500 Đá + 100 Cống Hiến' :
-                                                member.Role === 'Elder' ? '300 Đá + 50 Cống Hiến' :
-                                                    member.Role === 'Core' ? '100 Đá + 30 Cống Hiến' :
-                                                        member.Role === 'Inner' ? '50 Đá + 20 Cống Hiến' : '10 Đá + 10 Cống Hiến'}
-                                        </div>
+                    {/* OVERVIEW TAB */}
+                    {activeTab === 'overview' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                                <h3 className="text-xl font-bold mb-4 text-yellow-400 flex items-center gap-2">
+                                    <Crown size={20} /> Thông Tin Cá Nhân
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-400">Vai Trò:</span>
+                                        <span className="font-bold text-white">{member.Role}</span>
                                     </div>
-                                    <button
-                                        onClick={handleClaimSalary}
-                                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded text-sm font-bold shadow-lg"
-                                    >
-                                        Nhận Lương
-                                    </button>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-400">Cống Hiến:</span>
+                                        <span className="font-bold text-green-400">{member.Contribution}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-400">Gia Nhập:</span>
+                                        <span className="text-gray-300">{new Date(member.JoinedAt).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                                <div className="mt-6 pt-6 border-t border-gray-700">
+                                    <h4 className="font-bold mb-3 text-gray-300 flex justify-between">
+                                        <span>Đóng Góp Tài Nguyên</span>
+                                        <span className="text-yellow-400 text-sm">Hiện có: {userStones} Linh Thạch</span>
+                                    </h4>
+                                    <div className="flex gap-2 mb-4">
+                                        <button onClick={() => handleContribute(100)} className="flex-1 py-2 bg-gray-700 hover:bg-green-700 rounded text-sm font-bold">
+                                            100 Đá
+                                        </button>
+                                        <button onClick={() => handleContribute(1000)} className="flex-1 py-2 bg-gray-700 hover:bg-green-600 rounded text-sm font-bold">
+                                            1000 Đá
+                                        </button>
+                                    </div>
+
+                                    <h4 className="font-bold mb-3 text-gray-300">Lương Bổng Hàng Ngày</h4>
+                                    <div className="bg-black/20 p-3 rounded flex justify-between items-center">
+                                        <div className="text-sm">
+                                            <div className="text-gray-400">Vai trò: <span className="text-white font-bold">{member.Role}</span></div>
+                                            <div className="text-yellow-400 text-xs mt-1">
+                                                {member.Role === 'Leader' ? '500 Đá + 100 Cống Hiến' :
+                                                    member.Role === 'Elder' ? '300 Đá + 50 Cống Hiến' :
+                                                        member.Role === 'Core' ? '100 Đá + 30 Cống Hiến' :
+                                                            member.Role === 'Inner' ? '50 Đá + 20 Cống Hiến' : '10 Đá + 10 Cống Hiến'}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleClaimSalary}
+                                            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded text-sm font-bold shadow-lg"
+                                        >
+                                            Nhận Lương
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-                            <h3 className="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
-                                <Shield size={20} /> Thông Báo Tông Môn
-                            </h3>
-                            <div className="bg-black/30 p-4 rounded text-gray-300 italic h-48 overflow-y-auto">
-                                {`Chào mừng các đạo hữu gia nhập ${sect.Name}. Hãy cùng nhau tu luyện, săn bắt linh thú và đưa tông môn lên đỉnh vinh quang!
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                                <h3 className="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
+                                    <Shield size={20} /> Thông Báo Tông Môn
+                                </h3>
+                                <div className="bg-black/30 p-4 rounded text-gray-300 italic h-48 overflow-y-auto">
+                                    {`Chào mừng các đạo hữu gia nhập ${sect.Name}. Hãy cùng nhau tu luyện, săn bắt linh thú và đưa tông môn lên đỉnh vinh quang!
 - Tông Chủ ${sect.LeaderName}`}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* MEMBERS TAB */}
-                {activeTab === 'members' && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="text-gray-400 border-b border-gray-700">
-                                    <th className="p-4">Tên</th>
-                                    <th className="p-4">Vai Trò</th>
-                                    <th className="p-4">Cống Hiến</th>
-                                    <th className="p-4">Hành Động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {members.map(m => (
-                                    <tr key={m.Id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                                        <td className="p-4 font-bold text-white">{m.Username}</td>
-                                        <td className={`p-4 font-bold ${m.Role === 'Leader' ? 'text-yellow-500' :
-                                            m.Role === 'Elder' ? 'text-purple-400' : 'text-gray-300'
-                                            }`}>
-                                            {m.Role}
-                                        </td>
-                                        <td className="p-4 text-green-400">{m.Contribution}</td>
-                                        <td className="p-4">
-                                            {isLeader && m.Role !== 'Leader' && (
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleManageMember(m.UserId, 'kick')}
-                                                        className="text-red-500 hover:text-red-400 text-sm font-bold"
-                                                    >
-                                                        Trục Xuất
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleManageMember(m.UserId, 'promote')}
-                                                        className="text-green-500 hover:text-green-400 text-sm font-bold"
-                                                    >
-                                                        Thăng Chức
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleManageMember(m.UserId, 'demote')}
-                                                        className="text-yellow-500 hover:text-yellow-400 text-sm font-bold"
-                                                    >
-                                                        Giáng Chức
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
+                    {/* MEMBERS TAB */}
+                    {activeTab === 'members' && (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="text-gray-400 border-b border-gray-700">
+                                        <th className="p-4">Tên</th>
+                                        <th className="p-4">Vai Trò</th>
+                                        <th className="p-4">Cống Hiến</th>
+                                        <th className="p-4">Hành Động</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* FACILITIES TAB */}
-                {activeTab === 'facilities' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {buildings.map(b => (
-                            <div key={b.Id} className="bg-gray-800 p-6 rounded-xl border border-gray-700 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-2 bg-blue-900/50 rounded-bl-xl text-xs font-bold text-blue-300">
-                                    Lv.{b.Level}
-                                </div>
-                                <div className="mb-4">
-                                    {b.Type === 'MainHall' && <Crown size={40} className="text-yellow-500 mb-2" />}
-                                    {b.Type === 'Pavilion' && <Book size={40} className="text-purple-500 mb-2" />}
-                                    {b.Type === 'Alchemy' && <Zap size={40} className="text-green-500 mb-2" />}
-                                    {b.Type === 'Vein' && <Database size={40} className="text-blue-500 mb-2" />}
-                                    {b.Type === 'Mission' && <Star size={40} className="text-red-500 mb-2" />}
-
-                                    <h3 className="text-xl font-bold text-white">
-                                        {b.Type === 'MainHall' ? 'Đại Điện' :
-                                            b.Type === 'Pavilion' ? 'Tàng Kinh Các' :
-                                                b.Type === 'Alchemy' ? 'Đan Dược Đường' :
-                                                    b.Type === 'Vein' ? 'Linh Mạch' : 'Nhiệm Vụ Đường'}
-                                    </h3>
-                                </div>
-                                <p className="text-gray-400 text-sm mb-4 h-10">
-                                    {b.Type === 'MainHall' ? 'Trung tâm quản lý, mở khóa kiến trúc mới.' :
-                                        b.Type === 'Pavilion' ? 'Tăng chỉ số thụ động cho toàn bang.' :
-                                            b.Type === 'Alchemy' ? 'Chế tạo đan dược hỗ trợ tu luyện.' :
-                                                b.Type === 'Vein' ? 'Sản sinh Linh Thạch mỗi ngày.' : 'Cung cấp nhiệm vụ bang hội.'}
-                                </p>
-                                <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
-                                    <span className="text-xs text-gray-500">Nâng cấp: {b.Level * 1000} Tài Nguyên</span>
-                                    <div className="flex gap-2">
-                                        {b.Type === 'Vein' && (
-                                            <button
-                                                onClick={handleClaimVein}
-                                                className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-xs font-bold animate-pulse"
-                                            >
-                                                Thu Hoạch
-                                            </button>
-                                        )}
-                                        {isLeader && (
-                                            <button
-                                                onClick={() => handleUpgrade(b.Type)}
-                                                className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold"
-                                            >
-                                                Nâng Cấp
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* MISSIONS TAB */}
-                {activeTab === 'missions' && (
-                    <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center">
-                            <h3 className="text-2xl font-bold text-yellow-400 mb-2">Nhiệm Vụ Tông Môn</h3>
-                            <p className="text-gray-400">Hoàn thành nhiệm vụ hàng ngày để nhận Cống Hiến và Kinh Nghiệm.</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4">
-                            {missions.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">Đang tải nhiệm vụ...</div>
-                            ) : (
-                                missions.map(m => (
-                                    <div key={m.Id} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
-                                        <div>
-                                            <h4 className="font-bold text-lg text-white mb-1">{m.Title}</h4>
-                                            <p className="text-sm text-gray-400 mb-2">{m.Description}</p>
-                                            <div className="flex gap-4 text-xs font-bold">
-                                                <span className="text-green-400">+{m.RewardContribution} Cống Hiến</span>
-                                                <span className="text-blue-400">+{m.RewardExp} Exp</span>
-                                            </div>
-                                        </div>
-                                        <div className="text-right min-w-[120px]">
-                                            <div className="text-sm text-gray-300 mb-2">
-                                                Tiến độ: <span className={m.Progress >= m.RequirementValue ? 'text-green-400' : 'text-yellow-400'}>
-                                                    {m.Progress}/{m.RequirementValue}
-                                                </span>
-                                            </div>
-                                            {m.IsClaimed ? (
-                                                <button disabled className="px-4 py-2 bg-gray-700 text-gray-500 rounded font-bold cursor-not-allowed">
-                                                    Đã Nhận
-                                                </button>
-                                            ) : m.Progress >= m.RequirementValue ? (
-                                                <button
-                                                    onClick={() => handleClaimMission(m.Id)}
-                                                    className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded font-bold animate-pulse"
-                                                >
-                                                    Nhận Thưởng
-                                                </button>
-                                            ) : (
-                                                <button disabled className="px-4 py-2 bg-gray-700 text-gray-500 rounded font-bold cursor-not-allowed">
-                                                    Chưa Xong
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* PAVILION TAB (SCRIPTURE PAVILION) */}
-                {activeTab === 'pavilion' && (
-                    <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-blue-900/20 z-0"></div>
-                            <h3 className="text-2xl font-bold text-blue-400 mb-2 relative z-10">Tàng Kinh Các</h3>
-                            <p className="text-gray-400 relative z-10">Dùng Cống Hiến để học các bí kíp thất truyền, gia tăng sức mạnh vĩnh viễn.</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {skills.length === 0 ? (
-                                <div className="col-span-2 text-center py-8 text-gray-500">Đang tải bí kíp...</div>
-                            ) : (
-                                skills.map(s => (
-                                    <div key={s.Id} className={`p-6 rounded-xl border relative overflow-hidden transition-all ${s.IsLearned ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-800 border-gray-700 hover:border-blue-500'}`}>
-                                        {s.IsLearned && (
-                                            <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-bl">Đã Học</div>
-                                        )}
-                                        <h4 className="font-bold text-xl text-white mb-2">{s.Name}</h4>
-                                        <p className="text-gray-400 text-sm mb-4 h-10">{s.Description}</p>
-
-                                        <div className="flex justify-between items-end">
-                                            <div className="text-sm">
-                                                <div className="text-gray-500 mb-1">Yêu cầu: Lv.{s.ReqSectLevel}</div>
-                                                <div className="font-bold text-yellow-400">{s.CostContribution} Cống Hiến</div>
-                                            </div>
-
-                                            {s.IsLearned ? (
-                                                <button disabled className="px-4 py-2 bg-gray-700 text-gray-500 rounded font-bold cursor-not-allowed">
-                                                    Đã Lĩnh Ngộ
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleLearnSkill(s.Id)}
-                                                    disabled={member.Contribution < s.CostContribution || sect.Level < s.ReqSectLevel}
-                                                    className={`px-4 py-2 rounded font-bold transition-all ${member.Contribution >= s.CostContribution && sect.Level >= s.ReqSectLevel
-                                                        ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                                                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
-                                                >
-                                                    Học Ngay
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* AUCTION TAB */}
-                {activeTab === 'auction' && (
-                    <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center">
-                            <h3 className="text-2xl font-bold text-yellow-400 mb-2">Sàn Đấu Giá</h3>
-                            <p className="text-gray-400">Nơi các bảo vật quý hiếm được mang ra đấu giá công khai.</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {auctions.length === 0 ? (
-                                <div className="col-span-2 text-center py-8 text-gray-500">Không có phiên đấu giá nào.</div>
-                            ) : (
-                                auctions.map(a => (
-                                    <div key={a.Id} className="bg-gray-800 p-4 rounded-xl border border-gray-700 relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-bl">HOT</div>
-                                        <h4 className="font-bold text-lg text-white mb-1">{a.ItemName}</h4>
-                                        <p className="text-sm text-gray-400 mb-4">{a.ItemDesc}</p>
-
-                                        <div className="bg-black/30 p-3 rounded mb-4">
-                                            <div className="flex justify-between text-sm mb-1">
-                                                <span className="text-gray-400">Giá khởi điểm:</span>
-                                                <span className="text-gray-300">{a.StartPrice}</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm mb-1">
-                                                <span className="text-gray-400">Giá hiện tại:</span>
-                                                <span className="text-yellow-400 font-bold">{a.CurrentBid}</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-gray-400">Người giữ giá:</span>
-                                                <span className="text-blue-400">{a.HighestBidderName || 'Chưa có'}</span>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => handleBid(a.Id, a.CurrentBid)}
-                                            className="w-full py-2 bg-yellow-600 hover:bg-yellow-500 rounded font-bold text-white"
-                                        >
-                                            Đấu Giá Ngay
-                                        </button>
-                                        <div className="text-center mt-2 text-xs text-gray-500">
-                                            Kết thúc: {new Date(a.EndTime).toLocaleString()}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* BLACK MARKET TAB */}
-                {activeTab === 'blackmarket' && (
-                    <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-purple-900/20 z-0"></div>
-                            <h3 className="text-2xl font-bold text-purple-400 mb-2 relative z-10">Chợ Đen</h3>
-                            <p className="text-gray-400 relative z-10">Nơi giao dịch ngầm các vật phẩm cấm kỵ. Giá cao nhưng chất lượng.</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {blackMarketItems.length === 0 ? (
-                                <div className="col-span-3 text-center py-8 text-gray-500">Chợ đen đang đóng cửa...</div>
-                            ) : (
-                                blackMarketItems.map(item => (
-                                    <div key={item.Id} className="bg-gray-800 p-4 rounded-xl border border-purple-900/50 hover:border-purple-500 transition-all group">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-lg text-white">{item.ItemName}</h4>
-                                            <span className={`text-xs font-bold px-2 py-1 rounded ${item.Rarity === 'Legendary' ? 'bg-yellow-600 text-black' :
-                                                item.Rarity === 'Epic' ? 'bg-purple-600 text-white' : 'bg-gray-600'
-                                                }`}>{item.Rarity}</span>
-                                        </div>
-                                        <p className="text-sm text-gray-400 mb-4 h-10 line-clamp-2">{item.ItemDesc}</p>
-
-                                        <div className="flex justify-between items-center mt-4">
-                                            <div className="text-yellow-400 font-bold">{item.Price} Đá</div>
-                                            <div className="text-gray-500 text-sm">Còn: {item.Stock}</div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => handleBuyBlackMarket(item.Id, item.Price)}
-                                            className="w-full mt-4 py-2 bg-purple-700 hover:bg-purple-600 rounded font-bold text-white shadow-lg shadow-purple-900/50"
-                                        >
-                                            Mua Ngay
-                                        </button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-                {/* SHOP TAB */}
-                {activeTab === 'shop' && (
-                    <div className="space-y-8">
-                        {/* Inventory Section */}
-                        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-                            <h3 className="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
-                                <Database size={20} /> Túi Đồ Của Bạn
-                            </h3>
-                            {inventory.length === 0 ? (
-                                <p className="text-gray-500 italic">Túi đồ trống rỗng...</p>
-                            ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {inventory.map(item => (
-                                        <div key={item.Id} className="bg-gray-900 p-3 rounded border border-gray-700 flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${item.Rarity === 'Common' ? 'bg-gray-600' :
-                                                item.Rarity === 'Uncommon' ? 'bg-green-600' :
-                                                    item.Rarity === 'Rare' ? 'bg-blue-600' : 'bg-purple-600'
+                                </thead>
+                                <tbody>
+                                    {members.map(m => (
+                                        <tr key={m.Id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                                            <td className="p-4 font-bold text-white">{m.Username}</td>
+                                            <td className={`p-4 font-bold ${m.Role === 'Leader' ? 'text-yellow-500' :
+                                                m.Role === 'Elder' ? 'text-purple-400' : 'text-gray-300'
                                                 }`}>
-                                                {item.Quantity}x
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-sm text-white">{item.Name}</div>
-                                                <div className="text-xs text-gray-400">{item.Type}</div>
-                                            </div>
-                                        </div>
+                                                {m.Role}
+                                            </td>
+                                            <td className="p-4 text-green-400">{m.Contribution}</td>
+                                            <td className="p-4">
+                                                {isLeader && m.Role !== 'Leader' && (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleManageMember(m.UserId, 'kick')}
+                                                            className="text-red-500 hover:text-red-400 text-sm font-bold"
+                                                        >
+                                                            Trục Xuất
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleManageMember(m.UserId, 'promote')}
+                                                            className="text-green-500 hover:text-green-400 text-sm font-bold"
+                                                        >
+                                                            Thăng Chức
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleManageMember(m.UserId, 'demote')}
+                                                            className="text-yellow-500 hover:text-yellow-400 text-sm font-bold"
+                                                        >
+                                                            Giáng Chức
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
                                     ))}
-                                </div>
-                            )}
+                                </tbody>
+                            </table>
                         </div>
+                    )}
 
-                        {/* Shop Section */}
+                    {/* FACILITIES TAB */}
+                    {activeTab === 'facilities' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {shopItems.map(item => (
-                                <div key={item.Id} className="bg-gray-800 p-6 rounded-xl border border-gray-700 relative group hover:border-yellow-500 transition-all">
-                                    <div className={`absolute top-0 right-0 px-2 py-1 rounded-bl-xl text-xs font-bold ${item.Rarity === 'Common' ? 'bg-gray-600' :
-                                        item.Rarity === 'Uncommon' ? 'bg-green-600' :
-                                            item.Rarity === 'Rare' ? 'bg-blue-600' : 'bg-purple-600'
-                                        }`}>
-                                        {item.Rarity}
+                            {buildings.map(b => (
+                                <div key={b.Id} className="bg-gray-800 p-6 rounded-xl border border-gray-700 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-2 bg-blue-900/50 rounded-bl-xl text-xs font-bold text-blue-300">
+                                        Lv.{b.Level}
                                     </div>
-                                    <h3 className="text-lg font-bold text-white mb-1">{item.Name}</h3>
-                                    <p className="text-xs text-gray-400 mb-2">{item.Type}</p>
-                                    <p className="text-sm text-gray-300 mb-4 h-10 line-clamp-2">{item.Description}</p>
+                                    <div className="mb-4">
+                                        {b.Type === 'MainHall' && <Crown size={40} className="text-yellow-500 mb-2" />}
+                                        {b.Type === 'Pavilion' && <Book size={40} className="text-purple-500 mb-2" />}
+                                        {b.Type === 'Alchemy' && <Zap size={40} className="text-green-500 mb-2" />}
+                                        {b.Type === 'Vein' && <Database size={40} className="text-blue-500 mb-2" />}
+                                        {b.Type === 'Mission' && <Star size={40} className="text-red-500 mb-2" />}
 
-                                    <div className="flex justify-between items-center pt-4 border-t border-gray-700">
-                                        <div className="text-yellow-400 font-bold text-sm">
-                                            {item.CostContribution} Cống Hiến
-                                        </div>
-                                        <button
-                                            onClick={() => handleBuyItem(item.Id)}
-                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-bold"
-                                        >
-                                            Mua
-                                        </button>
+                                        <h3 className="text-xl font-bold text-white">
+                                            {b.Type === 'MainHall' ? 'Đại Điện' :
+                                                b.Type === 'Pavilion' ? 'Tàng Kinh Các' :
+                                                    b.Type === 'Alchemy' ? 'Đan Dược Đường' :
+                                                        b.Type === 'Vein' ? 'Linh Mạch' : 'Nhiệm Vụ Đường'}
+                                        </h3>
                                     </div>
-                                    <div className="absolute bottom-2 right-2 text-[10px] text-gray-500">
-                                        Yêu cầu: {item.ReqRole}
+                                    <p className="text-gray-400 text-sm mb-4 h-10">
+                                        {b.Type === 'MainHall' ? 'Trung tâm quản lý, mở khóa kiến trúc mới.' :
+                                            b.Type === 'Pavilion' ? 'Tăng chỉ số thụ động cho toàn bang.' :
+                                                b.Type === 'Alchemy' ? 'Chế tạo đan dược hỗ trợ tu luyện.' :
+                                                    b.Type === 'Vein' ? 'Sản sinh Linh Thạch mỗi ngày.' : 'Cung cấp nhiệm vụ bang hội.'}
+                                    </p>
+                                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
+                                        <span className="text-xs text-gray-500">Nâng cấp: {b.Level * 1000} Tài Nguyên</span>
+                                        <div className="flex gap-2">
+                                            {b.Type === 'Vein' && (
+                                                <button
+                                                    onClick={handleClaimVein}
+                                                    className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-xs font-bold animate-pulse"
+                                                >
+                                                    Thu Hoạch
+                                                </button>
+                                            )}
+                                            {isLeader && (
+                                                <button
+                                                    onClick={() => handleUpgrade(b.Type)}
+                                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold"
+                                                >
+                                                    Nâng Cấp
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
+                    )}
+
+                    {/* MISSIONS TAB */}
+                    {activeTab === 'missions' && (
+                        <div className="space-y-6">
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center">
+                                <h3 className="text-2xl font-bold text-yellow-400 mb-2">Nhiệm Vụ Tông Môn</h3>
+                                <p className="text-gray-400">Hoàn thành nhiệm vụ hàng ngày để nhận Cống Hiến và Kinh Nghiệm.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                {missions.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">Đang tải nhiệm vụ...</div>
+                                ) : (
+                                    missions.map(m => (
+                                        <div key={m.Id} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex justify-between items-center">
+                                            <div>
+                                                <h4 className="font-bold text-lg text-white mb-1">{m.Title}</h4>
+                                                <p className="text-sm text-gray-400 mb-2">{m.Description}</p>
+                                                <div className="flex gap-4 text-xs font-bold">
+                                                    <span className="text-green-400">+{m.RewardContribution} Cống Hiến</span>
+                                                    <span className="text-blue-400">+{m.RewardExp} Exp</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-right min-w-[120px]">
+                                                <div className="text-sm text-gray-300 mb-2">
+                                                    Tiến độ: <span className={m.Progress >= m.RequirementValue ? 'text-green-400' : 'text-yellow-400'}>
+                                                        {m.Progress}/{m.RequirementValue}
+                                                    </span>
+                                                </div>
+                                                {m.IsClaimed ? (
+                                                    <button disabled className="px-4 py-2 bg-gray-700 text-gray-500 rounded font-bold cursor-not-allowed">
+                                                        Đã Nhận
+                                                    </button>
+                                                ) : m.Progress >= m.RequirementValue ? (
+                                                    <button
+                                                        onClick={() => handleClaimMission(m.Id)}
+                                                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded font-bold animate-pulse"
+                                                    >
+                                                        Nhận Thưởng
+                                                    </button>
+                                                ) : (
+                                                    <button disabled className="px-4 py-2 bg-gray-700 text-gray-500 rounded font-bold cursor-not-allowed">
+                                                        Chưa Xong
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* PAVILION TAB (SCRIPTURE PAVILION) */}
+                    {activeTab === 'pavilion' && (
+                        <div className="space-y-6">
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-blue-900/20 z-0"></div>
+                                <h3 className="text-2xl font-bold text-blue-400 mb-2 relative z-10">Tàng Kinh Các</h3>
+                                <p className="text-gray-400 relative z-10">Dùng Cống Hiến để học các bí kíp thất truyền, gia tăng sức mạnh vĩnh viễn.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {skills.length === 0 ? (
+                                    <div className="col-span-2 text-center py-8 text-gray-500">Đang tải bí kíp...</div>
+                                ) : (
+                                    skills.map(s => (
+                                        <div key={s.Id} className={`p-6 rounded-xl border relative overflow-hidden transition-all ${s.IsLearned ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-800 border-gray-700 hover:border-blue-500'}`}>
+                                            {s.IsLearned && (
+                                                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-bl">Đã Học</div>
+                                            )}
+                                            <h4 className="font-bold text-xl text-white mb-2">{s.Name}</h4>
+                                            <p className="text-gray-400 text-sm mb-4 h-10">{s.Description}</p>
+
+                                            <div className="flex justify-between items-end">
+                                                <div className="text-sm">
+                                                    <div className="text-gray-500 mb-1">Yêu cầu: Lv.{s.ReqSectLevel}</div>
+                                                    <div className="font-bold text-yellow-400">{s.CostContribution} Cống Hiến</div>
+                                                </div>
+
+                                                {s.IsLearned ? (
+                                                    <button disabled className="px-4 py-2 bg-gray-700 text-gray-500 rounded font-bold cursor-not-allowed">
+                                                        Đã Lĩnh Ngộ
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleLearnSkill(s.Id)}
+                                                        disabled={member.Contribution < s.CostContribution || sect.Level < s.ReqSectLevel}
+                                                        className={`px-4 py-2 rounded font-bold transition-all ${member.Contribution >= s.CostContribution && sect.Level >= s.ReqSectLevel
+                                                            ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                                                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                                                    >
+                                                        Học Ngay
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* AUCTION TAB */}
+                    {activeTab === 'auction' && (
+                        <div className="space-y-6">
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center">
+                                <h3 className="text-2xl font-bold text-yellow-400 mb-2">Sàn Đấu Giá</h3>
+                                <p className="text-gray-400">Nơi các bảo vật quý hiếm được mang ra đấu giá công khai.</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {auctions.length === 0 ? (
+                                    <div className="col-span-2 text-center py-8 text-gray-500">Không có phiên đấu giá nào.</div>
+                                ) : (
+                                    auctions.map(a => (
+                                        <div key={a.Id} className="bg-gray-800 p-4 rounded-xl border border-gray-700 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-bl">HOT</div>
+                                            <h4 className="font-bold text-lg text-white mb-1">{a.ItemName}</h4>
+                                            <p className="text-sm text-gray-400 mb-4">{a.ItemDesc}</p>
+
+                                            <div className="bg-black/30 p-3 rounded mb-4">
+                                                <div className="flex justify-between text-sm mb-1">
+                                                    <span className="text-gray-400">Giá khởi điểm:</span>
+                                                    <span className="text-gray-300">{a.StartPrice}</span>
+                                                </div>
+                                                <div className="flex justify-between text-sm mb-1">
+                                                    <span className="text-gray-400">Giá hiện tại:</span>
+                                                    <span className="text-yellow-400 font-bold">{a.CurrentBid}</span>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-gray-400">Người giữ giá:</span>
+                                                    <span className="text-blue-400">{a.HighestBidderName || 'Chưa có'}</span>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => handleBid(a.Id, a.CurrentBid)}
+                                                className="w-full py-2 bg-yellow-600 hover:bg-yellow-500 rounded font-bold text-white"
+                                            >
+                                                Đấu Giá Ngay
+                                            </button>
+                                            <div className="text-center mt-2 text-xs text-gray-500">
+                                                Kết thúc: {new Date(a.EndTime).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* BLACK MARKET TAB */}
+                    {activeTab === 'blackmarket' && (
+                        <div className="space-y-6">
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-purple-900/20 z-0"></div>
+                                <h3 className="text-2xl font-bold text-purple-400 mb-2 relative z-10">Chợ Đen</h3>
+                                <p className="text-gray-400 relative z-10">Nơi giao dịch ngầm các vật phẩm cấm kỵ. Giá cao nhưng chất lượng.</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {blackMarketItems.length === 0 ? (
+                                    <div className="col-span-3 text-center py-8 text-gray-500">Chợ đen đang đóng cửa...</div>
+                                ) : (
+                                    blackMarketItems.map(item => (
+                                        <div key={item.Id} className="bg-gray-800 p-4 rounded-xl border border-purple-900/50 hover:border-purple-500 transition-all group">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="font-bold text-lg text-white">{item.ItemName}</h4>
+                                                <span className={`text-xs font-bold px-2 py-1 rounded ${item.Rarity === 'Legendary' ? 'bg-yellow-600 text-black' :
+                                                    item.Rarity === 'Epic' ? 'bg-purple-600 text-white' : 'bg-gray-600'
+                                                    }`}>{item.Rarity}</span>
+                                            </div>
+                                            <p className="text-sm text-gray-400 mb-4 h-10 line-clamp-2">{item.ItemDesc}</p>
+
+                                            <div className="flex justify-between items-center mt-4">
+                                                <div className="text-yellow-400 font-bold">{item.Price} Đá</div>
+                                                <div className="text-gray-500 text-sm">Còn: {item.Stock}</div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => handleBuyBlackMarket(item.Id, item.Price)}
+                                                className="w-full mt-4 py-2 bg-purple-700 hover:bg-purple-600 rounded font-bold text-white shadow-lg shadow-purple-900/50"
+                                            >
+                                                Mua Ngay
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    {/* SHOP TAB */}
+                    {activeTab === 'shop' && (
+                        <div className="space-y-8">
+                            {/* Inventory Section */}
+                            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                                <h3 className="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
+                                    <Database size={20} /> Túi Đồ Của Bạn
+                                </h3>
+                                {inventory.length === 0 ? (
+                                    <p className="text-gray-500 italic">Túi đồ trống rỗng...</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {inventory.map(item => (
+                                            <div key={item.Id} className="bg-gray-900 p-3 rounded border border-gray-700 flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${item.Rarity === 'Common' ? 'bg-gray-600' :
+                                                    item.Rarity === 'Uncommon' ? 'bg-green-600' :
+                                                        item.Rarity === 'Rare' ? 'bg-blue-600' : 'bg-purple-600'
+                                                    }`}>
+                                                    {item.Quantity}x
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-sm text-white">{item.Name}</div>
+                                                    <div className="text-xs text-gray-400">{item.Type}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Shop Section */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {shopItems.map(item => (
+                                    <div key={item.Id} className="bg-gray-800 p-6 rounded-xl border border-gray-700 relative group hover:border-yellow-500 transition-all">
+                                        <div className={`absolute top-0 right-0 px-2 py-1 rounded-bl-xl text-xs font-bold ${item.Rarity === 'Common' ? 'bg-gray-600' :
+                                            item.Rarity === 'Uncommon' ? 'bg-green-600' :
+                                                item.Rarity === 'Rare' ? 'bg-blue-600' : 'bg-purple-600'
+                                            }`}>
+                                            {item.Rarity}
+                                        </div>
+                                        <h3 className="text-lg font-bold text-white mb-1">{item.Name}</h3>
+                                        <p className="text-xs text-gray-400 mb-2">{item.Type}</p>
+                                        <p className="text-sm text-gray-300 mb-4 h-10 line-clamp-2">{item.Description}</p>
+
+                                        <div className="flex justify-between items-center pt-4 border-t border-gray-700">
+                                            <div className="text-yellow-400 font-bold text-sm">
+                                                {item.CostContribution} Cống Hiến
+                                            </div>
+                                            <button
+                                                onClick={() => handleBuyItem(item.Id)}
+                                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-bold"
+                                            >
+                                                Mua
+                                            </button>
+                                        </div>
+                                        <div className="absolute bottom-2 right-2 text-[10px] text-gray-500">
+                                            Yêu cầu: {item.ReqRole}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
+
+    // Fallback - shouldn't reach here
+    return <div className="text-white p-8">Error: Invalid view state</div>;
 };
 
 export default SectPage;
+
