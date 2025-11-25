@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, ShoppingBag, Users, User, Heart, Clock, Menu, Zap, Dog, Swords, Video, X } from 'lucide-react';
+import { Home, ShoppingBag, Users, User, Heart, Clock, Menu, Zap, Dog, Swords, Video, X, Crown } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import clsx from 'clsx';
 
@@ -11,9 +11,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
         { id: 'pet', label: 'Linh Thú', icon: Dog, path: '/pet' },
         { id: 'pvp', label: 'Thách Đấu', icon: Swords, path: '/pvp' },
         { id: 'sect', label: 'Tông Môn', icon: Users, path: '/sect' },
+        { id: 'vip', label: 'VIP', icon: Crown, path: '/vip' },
         { id: 'watch-party', label: 'Xem Chung', icon: Video, path: '/watch-party/default' },
         { id: 'profile', label: 'Động Phủ', icon: User, path: '/profile' },
     ];
+
 
     return (
         <>

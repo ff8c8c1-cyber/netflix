@@ -1112,7 +1112,168 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 });
 
+// ========== VIP SYSTEM ==========
+
+// Get VIP status
+app.get('/api/vip/status/:userId', async (req, res) => {
+    try {
+        const { data: user, error } = await supabase
+            .from('Users')
+            .select('VipStatus, VipExpiresAt, LastVipClaim')
+            .eq('Id', req.params.userId)
+            .single();
+
+        if (error) throw error;
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Check if monthly VIP expired
+        if (user.VipStatus === 'monthly' && user.VipExpiresAt) {
+            if (new Date(user.VipExpiresAt) < new Date()) {
+                // Expired - reset to none
+                await supabase
+                    .from('Users')
+                    .update({ VipStatus: 'none', VipExpiresAt: null })
+                    .eq('Id', req.params.userId);
+
+                return res.json({ vipStatus: 'none', expiresAt: null });
+            }
+        }
+
+        res.json({
+            vipStatus: user.VipStatus || 'none',
+            expiresAt: user.VipExpiresAt,
+            lastClaim: user.LastVipClaim
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Purchase VIP
+app.post('/api/vip/purchase', async (req, res) => {
+    try {
+        const { userId, vipType } = req.body; // 'monthly' or 'lifetime'
+
+        if (!['monthly', 'lifetime'].includes(vipType)) {
+            return res.status(400).json({ message: 'Invalid VIP type' });
+        }
+
+        const costs = { monthly: 200, lifetime: 2000 };
+        const cost = costs[vipType];
+
+        // Get user
+        const { data: user, error: userError } = await supabase
+            .from('Users')
+            .select('Stones')
+            .eq('Id', userId)
+            .single();
+
+        if (userError) throw userError;
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (user.Stones < cost) {
+            return res.status(400).json({ message: 'Not enough stones' });
+        }
+
+        // Calculate expiry
+        const expiresAt = vipType === 'monthly'
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // +30 days
+            : null; // lifetime = no expiry
+
+        // Deduct stones and set VIP
+        const { error: updateError } = await supabase
+            .from('Users')
+            .update({
+                Stones: user.Stones - cost,
+                StonesSpent: supabase.raw('StonesSpent + ?', cost),
+                VipStatus: vipType,
+                VipExpiresAt: expiresAt
+            })
+            .eq('Id', userId);
+
+        if (updateError) throw updateError;
+
+        res.json({
+            message: `VIP ${vipType} activated successfully!`,
+            vipStatus: vipType,
+            expiresAt,
+            stonesRemaining: user.Stones - cost
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Claim daily VIP stones
+app.post('/api/vip/daily-claim', async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        // Get user VIP status
+        const { data: user, error: userError } = await supabase
+            .from('Users')
+            .select('VipStatus, LastVipClaim, Stones')
+            .eq('Id', userId)
+            .single();
+
+        if (userError) throw userError;
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (user.VipStatus === 'none') {
+            return res.status(400).json({ message: 'Not a VIP member' });
+        }
+
+        // Check if already claimed today
+        if (user.LastVipClaim) {
+            const lastClaim = new Date(user.LastVipClaim);
+            const now = new Date();
+            const hoursSinceLastClaim = (now - lastClaim) / (1000 * 60 * 60);
+
+            if (hoursSinceLastClaim < 24) {
+                const hoursRemaining = Math.ceil(24 - hoursSinceLastClaim);
+                return res.status(400).json({
+                    message: `Already claimed today. Next claim in ${hoursRemaining} hours`,
+                    hoursRemaining
+                });
+            }
+        }
+
+        // Calculate daily stones
+        const dailyStones = user.VipStatus === 'lifetime' ? 200 : 100;
+
+        // Give stones
+        const { error: updateError } = await supabase
+            .from('Users')
+            .update({
+                Stones: user.Stones + dailyStones,
+                LastVipClaim: new Date().toISOString()
+            })
+            .eq('Id', userId);
+
+        if (updateError) throw updateError;
+
+        res.json({
+            message: 'Daily VIP stones claimed!',
+            amount: dailyStones,
+            newTotal: user.Stones + dailyStones
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Helper function to calculate VIP EXP multiplier
+function getVipExpMultiplier(vipStatus) {
+    if (vipStatus === 'lifetime') return 2.0;
+    if (vipStatus === 'monthly') return 1.5;
+    return 1.0;
+}
+
 // Duplicate routes removed
+
 
 
 

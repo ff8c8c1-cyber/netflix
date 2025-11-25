@@ -19,6 +19,7 @@ const FavoritesPage = React.lazy(() => import('./pages/FavoritesPage'));
 const HistoryPage = React.lazy(() => import('./pages/HistoryPage'));
 const AIAssistant = React.lazy(() => import('./components/AIAssistant'));
 const WatchPartyPage = React.lazy(() => import('./pages/WatchPartyPage'));
+const VIPPage = React.lazy(() => import('./pages/VIPPage'));
 
 function App() {
     const [isReady, setIsReady] = useState(false);
@@ -77,6 +78,7 @@ function App() {
                             <Route path="pet" element={<PetPage />} />
                             <Route path="pvp" element={<PvPPage />} />
                             <Route path="sect" element={<SectPage />} />
+                            <Route path="vip" element={<VIPPage />} />
                             <Route path="favorites" element={<FavoritesPage />} />
                             <Route path="history" element={<HistoryPage />} />
                             <Route path="watch-party/:roomId" element={<WatchPartyPage />} />
