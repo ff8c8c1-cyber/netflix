@@ -1186,7 +1186,6 @@ app.post('/api/vip/purchase', async (req, res) => {
             .from('Users')
             .update({
                 Stones: user.Stones - cost,
-                StonesSpent: supabase.raw('StonesSpent + ?', cost),
                 VipStatus: vipType,
                 VipExpiresAt: expiresAt
             })
