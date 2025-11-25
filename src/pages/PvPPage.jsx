@@ -162,7 +162,7 @@ const PvPPage = () => {
     if (!user) return <div className="text-white">Loading...</div>;
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-8 ml-64">
+        <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 ml-0 md:ml-64">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-red-500">
                     Đấu Trường Thần Thú

@@ -414,7 +414,7 @@ const SectPage = () => {
     // --- LOBBY VIEW ---
     if (view === 'lobby') {
         return (
-            <div className="min-h-screen bg-gray-900 text-white p-8 ml-64">
+            <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 ml-0 md:ml-64">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
                         Danh Sách Tông Môn
@@ -489,7 +489,7 @@ const SectPage = () => {
 
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-8 ml-64">
+        <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 ml-0 md:ml-64">
             {/* Header */}
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-8 mb-8 border border-gray-700 shadow-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
