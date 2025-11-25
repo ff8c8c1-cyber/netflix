@@ -7,6 +7,7 @@ import {
 import { useGameStore, RANKS, SECTS, ITEMS } from '../store/useGameStore';
 import { useNavigate } from 'react-router-dom';
 import { userService, reviewService, watchHistoryService } from '../lib/services';
+import { API_BASE_URL } from '../config/api';
 
 const ProfilePage = () => {
     const user = useGameStore(state => state.user);
@@ -22,6 +23,7 @@ const ProfilePage = () => {
     const [recentActivity, setRecentActivity] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [playlists, setPlaylists] = useState([]);
+    const [vipStatus, setVipStatus] = useState('none');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -32,14 +34,18 @@ const ProfilePage = () => {
 
         const loadUserData = async () => {
             try {
-                const [stats, activity, userReviews, userPlaylists] = await Promise.all([
+                const [stats, activity, userReviews, userPlaylists, vipData] = await Promise.all([
                     userService.getUserStats(user.id),
                     watchHistoryService.getRecentWatched(user.id, 5),
                     // Reviews would need a different query - simplified
                     Promise.resolve([]),
                     // Playlists would need a query - simplified
-                    Promise.resolve([])
+                    Promise.resolve([]),
+                    // Fetch VIP status
+                    fetch(`${API_BASE_URL}/api/vip/status/${user.id}`).then(r => r.json()).catch(() => ({ vipStatus: 'none' }))
                 ]);
+
+                setVipStatus(vipData.vipStatus || 'none');
 
                 setUserStats(stats);
                 setRecentActivity(activity);
@@ -151,9 +157,20 @@ const ProfilePage = () => {
                         <div className="flex-1 text-center md:text-left">
                             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                                 <div>
-                                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                                        {user.name}
-                                    </h1>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h1 className="text-3xl md:text-4xl font-bold text-white">
+                                            {user.name}
+                                        </h1>
+                                        {vipStatus !== 'none' && (
+                                            <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${vipStatus === 'lifetime'
+                                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                                    : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                                                }`}>
+                                                <Crown size={16} />
+                                                {vipStatus === 'lifetime' ? 'VIP Vĩnh Viễn' : 'VIP'}
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="flex flex-col md:flex-row md:items-center gap-2 text-gray-400">
                                         <div className="flex items-center gap-1">
                                             <Mail size={16} />
