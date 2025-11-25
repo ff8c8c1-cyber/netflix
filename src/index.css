@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+/* Mobile Optimizations */
+@supports (padding: max(0px)) {
+    .pb-safe {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    button,
+    .mobile-touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Large text for mobile */
+    .text-hero-mobile {
+        font-size: clamp(2rem, 8vw, 4rem);
+        line-height: 1.1;
+    }
+
+    /* Improve readability on small screens */
+    body {
+        font-size: 16px;
+        line-height: 1.6;
+        background-color: #020617;
+        color: white;
+    }
+
+    /* Ensure input fields are usable on mobile */
+    input,
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+}
+
+/* Custom scrollbar for mobile */
+.custom-scrollbar {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Custom scrollbar for desktop */
+@media (min-width: 768px) {
+    .custom-scrollbar:hover {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+    }
+
+    .custom-scrollbar:hover::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+    }
+
+    .custom-scrollbar:hover::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+    }
+
+    .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+    }
+
+    .custom-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* Smooth animations */
+.animate-in {
+    animation-duration: var(--animate-duration, 500ms);
+    animation-fill-mode: both;
+}
+
+.animate-in.fade-in {
+    animation-name: fadeIn;
+}
+
+.animate-in.slide-in-from-left-4 {
+    animation-name: slideInFromLeft;
+}
+
+.animate-in.slide-in-from-bottom-4 {
+    animation-name: slideInFromBottom;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Hover effects for desktop only */
+@media (hover: hover) and (pointer: fine) {
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .hover-glow:hover {
+        box-shadow:
+            0 0 20px rgba(8, 145, 178, 0.3),
+            inset 0 0 20px rgba(8, 145, 178, 0.1);
+    }
+}
+
+/* Loading skeleton */
+@keyframes skeleton-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.skeleton {
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Dark mode overrides */
+.dark {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #1a1a1a;
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Glassmorphism effect */
+.glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-dark {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Typography improvements */
+.text-balance {
+    text-wrap: balance;
+}
+
+.prose-custom a {
+    color: #06b6d4;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.prose-custom a:hover {
+    color: #0891b2;
+    text-decoration: underline;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+    .animate-in,
+    .animate-gradient,
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Focus visible for keyboard navigation */
+.focus-visible:focus-visible {
+    outline: 2px solid #06b6d4;
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: white !important;
+        color: black !important;
+    }
+}

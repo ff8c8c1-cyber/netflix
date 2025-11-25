@@ -1,0 +1,20 @@
+{
+  "$schema": "https://render.com/schema/v1",
+  "services": [
+    {
+      "type": "web",
+      "name": "barbershop-api",
+      "env": "node",
+      "region": "singapore",
+      "plan": "free",
+      "buildCommand": "cd server && npm install",
+      "startCommand": "cd server && npm start",
+      "envVars": [
+        {
+          "key": "NODE_ENV",
+          "value": "production"
+        }
+      ]
+    }
+  ]
+}

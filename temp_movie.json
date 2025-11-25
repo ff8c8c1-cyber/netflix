@@ -1,0 +1,8 @@
+{
+    "title": "Test Movie",
+    "description": "Test Description",
+    "cover_image": "http://example.com/image.jpg",
+    "video_url": "http://example.com/video.mp4",
+    "category": "Action",
+    "episode_count": 0
+}

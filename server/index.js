@@ -1,0 +1,1122 @@
+const express = require('express');
+const cors = require('cors');
+const { supabase } = require('./supabase'); // Use Supabase
+require('dotenv').config();
+const pvpRoutes = require('./pvp_routes');
+
+const http = require('http');
+const { initializeSocket } = require('./socket');
+
+const app = express();
+const server = http.createServer(app);
+const PORT = process.env.PORT || 3000;
+
+// Initialize Socket.io
+initializeSocket(server);
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
+
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use('/api/pvp', pvpRoutes);
+app.use('/api/sects', require('./sect_routes').router);
+console.log('Registering upload routes...');
+app.use('/api/upload', require('./upload_routes'));
+
+// Helper to convert PascalCase to snake_case
+const toSnakeCase = (obj) => {
+    if (Array.isArray(obj)) {
+        return obj.map(v => toSnakeCase(v));
+    } else if (obj !== null && obj.constructor === Object) {
+        return Object.keys(obj).reduce((result, key) => {
+            const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, "");
+            result[snakeKey] = toSnakeCase(obj[key]);
+            return result;
+        }, {});
+    }
+    return obj;
+};
+
+// Watch History Route
+app.get('/api/watch-history/:userId/:movieId', async (req, res) => {
+    const { userId, movieId } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('WatchHistory')
+            .select('ProgressSeconds, EpisodeId')
+            .eq('UserId', userId)
+            .eq('MovieId', movieId)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+            res.json(toSnakeCase(data));
+        } else {
+            res.json({ progress_seconds: 0, episode_id: null });
+        }
+    } catch (err) {
+        console.error('WatchHistory Error:', err);
+        res.json({ progress_seconds: 0, episode_id: null });
+    }
+});
+
+// Recommendations Route (ensure it exists)
+app.get('/api/movies/:id/recommendations', (req, res) => {
+    res.json([]);
+});
+
+// Routes
+app.get('/', (req, res) => {
+    res.send('Tien Gioi API is running (Supabase)');
+});
+
+// Auth Routes
+app.post('/api/auth/register', async (req, res) => {
+    const { username, password, email } = req.body;
+    try {
+        // Check if user exists
+        const { data: existingUser } = await supabase
+            .from('Users')
+            .select('Id')
+            .eq('Username', username)
+            .maybeSingle();
+
+        if (existingUser) {
+            return res.status(400).json({ message: 'Username already exists' });
+        }
+
+        // Insert User
+        const { data, error } = await supabase
+            .from('Users')
+            .insert({
+                Username: username,
+                PasswordHash: password,
+                Email: email,
+                AvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + username,
+                Rank: 0,
+                Exp: 0,
+                Stones: 100,
+                SectId: 1
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json(toSnakeCase({ message: 'User registered successfully', userId: data.Id }));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const { data: user, error } = await supabase
+            .from('Users')
+            .select('*')
+            .eq('Username', username)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        console.log('Login Attempt:', { username });
+
+        if (!user || user.PasswordHash !== password) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        res.json({ user: toSnakeCase(user) });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Movie Routes
+app.get('/api/movies', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('Movies')
+            .select('*')
+            .order('Rating', { ascending: false });
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/movies', async (req, res) => {
+    console.log('POST /api/movies request received', req.body);
+    const { title, description, cover_image, video_url, category, episode_count } = req.body;
+    try {
+        const { data, error } = await supabase
+            .from('Movies')
+            .insert({
+                Title: title,
+                Description: description,
+                CoverImage: cover_image,
+                VideoUrl: video_url,
+                Category: category,
+                EpisodeCount: episode_count || 0
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        console.log('Add Movie Result:', data);
+        res.json(toSnakeCase({ id: data.Id }));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.put('/api/movies/:id', async (req, res) => {
+    const { id } = req.params;
+    const { title, description, cover_image, video_url, category } = req.body;
+    try {
+        const { data, error } = await supabase
+            .from('Movies')
+            .update({
+                Title: title,
+                Description: description,
+                CoverImage: cover_image,
+                VideoUrl: video_url,
+                Category: category
+            })
+            .eq('Id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/movies/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error, count } = await supabase
+            .from('Movies')
+            .delete({ count: 'exact' })
+            .eq('Id', id);
+
+        if (error) throw error;
+        res.json({ deletedCount: count });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/pets/user/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Pets')
+            .select('*')
+            .eq('UserId', userId)
+            .limit(1)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+            res.json(toSnakeCase(data));
+        } else {
+            res.json(null);
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/pets/breakthrough', async (req, res) => {
+    const { petId } = req.body;
+    try {
+        // 1. Get Pet
+        const { data: pet, error: petError } = await supabase
+            .from('Pets')
+            .select('*')
+            .eq('Id', petId)
+            .single();
+
+        if (petError) throw petError;
+
+        // 2. Logic for Breakthrough (Simplified)
+        // Increase Tier, Reset Level, Boost Stats
+        const newTier = (pet.Tier || 0) + 1;
+        const newStats = JSON.parse(pet.Stats || '{}');
+
+        // Boost stats by 20%
+        for (let key in newStats) {
+            newStats[key] = Math.floor(newStats[key] * 1.2);
+        }
+
+        // 3. Update Pet
+        const { data: updatedPet, error: updateError } = await supabase
+            .from('Pets')
+            .update({
+                Tier: newTier,
+                Stats: JSON.stringify(newStats),
+                Level: 1,
+                Exp: 0
+            })
+            .eq('Id', petId)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        res.json(toSnakeCase(updatedPet));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/pets/feed', async (req, res) => {
+    const { petId, expAmount, bondAmount } = req.body;
+    try {
+        // Fetch current pet to get stats
+        const { data: pet, error: fetchError } = await supabase
+            .from('Pets')
+            .select('*')
+            .eq('Id', petId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // Calculate new stats (simplified logic, ideally use RPC for atomic update)
+        const newExp = (pet.Exp || 0) + expAmount;
+        const newBond = (pet.Bond || 0) + bondAmount;
+
+        const { data, error } = await supabase
+            .from('Pets')
+            .update({ Exp: newExp, Bond: newBond })
+            .eq('Id', petId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/pets/hatch', async (req, res) => {
+    const { userId, name, species, element } = req.body;
+    try {
+        // 1. Generate Initial Visual URL
+        const prompt = `mystical ${element} ${species} baby egg hatching cute fantasy art?width=800&height=800&nologo=true`;
+        const visualUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
+
+        // 2. Initial Stats (Tier 0)
+        const stats = { atk: 10, def: 10, hp: 100, spd: 10, cri: 5 };
+
+        // 3. Initial Skills (Tier 0)
+        let skills = [];
+        if (species === 'Tiger') {
+            skills.push({ name: "Băng Trảo", desc: "Táp gây sát thương băng và làm chậm (kèm Hàn Ấn).", type: "Active", unlockedAt: 0 });
+            skills.push({ name: "Tuyết Mệnh", desc: "Nhận khiên băng khi máu dưới 30%.", type: "Passive", unlockedAt: 0 });
+        }
+        else if (species === 'Phoenix') skills.push({ name: "Hỏa Linh Châm", desc: "Gây sát thương đốt cháy nhẹ.", type: "Active", unlockedAt: 0 });
+
+        // 4. Determine Rarity
+        let rarity = 'Mortal';
+        if (species === 'Dragon' || species === 'Phoenix') rarity = 'Divine';
+        else if (species === 'Tiger') rarity = 'Saint';
+        else if (species === 'Fox') rarity = 'Spirit';
+
+        // 5. Insert into Supabase
+        const { data, error } = await supabase
+            .from('Pets')
+            .insert({
+                UserId: userId,
+                Name: name,
+                Species: species,
+                Element: element,
+                Rarity: rarity,
+                VisualUrl: visualUrl,
+                Stats: JSON.stringify(stats),
+                Skills: JSON.stringify(skills),
+                Tier: 0,
+                Level: 1,
+                Exp: 0,
+                Bond: 0,
+                Mood: 'Happy',
+                Elo: 1000,
+                Wins: 0,
+                Losses: 0
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        const fs = require('fs');
+        fs.writeFileSync('server/error.log', err.toString() + '\n' + (err.stack || ''));
+        res.status(500).json({ message: 'Server error', error: err.toString() });
+    }
+});
+
+app.get('/api/pets/species', (req, res) => {
+    const species = [
+        { id: 'Dragon', name: 'Chân Long', desc: 'Uy mãnh vô song, chúa tể bầu trời.', element: 'Lôi' },
+        { id: 'Phoenix', name: 'Chu Tước', desc: 'Tái sinh từ tro tàn, sở hữu ngọn lửa bất diệt và khả năng hồi sinh.', element: 'Hỏa' },
+        { id: 'Tiger', name: 'Bạch Hổ', desc: 'Tuyết Vực Trấn Bắc – Hàn Thiên Chi Vương.', element: 'Băng' },
+        { id: 'Fox', name: 'Cửu Vĩ Hồ', desc: 'Mị hoặc chúng sinh, linh lực vô biên.', element: 'Tâm' },
+    ];
+    res.json(toSnakeCase(species));
+});
+
+app.get('/api/movies/top-rated', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('Movies')
+            .select('*')
+            .order('Rating', { ascending: false })
+            .limit(10); // Assuming top rated means top 10
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/movies/categories', async (req, res) => {
+    try {
+        // Distinct categories? Supabase doesn't support distinct easily on select?
+        // Actually it does: .select('Category', { count: 'exact', head: false }).distinct() ? No.
+        // We can fetch all and distinct in JS, or use RPC.
+        // For now, let's fetch all movies and extract categories.
+        const { data, error } = await supabase
+            .from('Movies')
+            .select('Category');
+
+        if (error) throw error;
+
+        const categories = [...new Set(data.map(m => m.Category))].filter(Boolean).map(c => ({ category: c }));
+        res.json(toSnakeCase(categories));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/movies/trending', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('Movies')
+            .select('*')
+            .order('Views', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/movies/new', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('Movies')
+            .select('*')
+            .order('CreatedAt', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/movies/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Movies')
+            .select('*')
+            .eq('Id', id)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (!data) {
+            return res.status(404).json({ message: 'Movie not found' });
+        }
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data: user, error } = await supabase
+            .from('Users')
+            .select('Id, Username, Email, AvatarUrl, Rank, Exp, Stones, CreatedAt, SectId')
+            .eq('Id', id)
+            .single();
+
+        if (error) throw error;
+
+        // Transform for frontend consistency (if needed)
+        // Frontend expects: name, email, avatar, rank, exp, stones, created_at
+        const result = {
+            id: user.Id,
+            name: user.Username,
+            email: user.Email,
+            avatar: user.AvatarUrl,
+            rank: user.Rank,
+            exp: user.Exp,
+            stones: user.Stones,
+            created_at: user.CreatedAt,
+            sect_id: user.SectId
+        };
+
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/users/:id/home-stats', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Fetch user stats manually
+        const { data: user, error } = await supabase
+            .from('Users')
+            .select('Rank, Exp, Stones, MysteryBags')
+            .eq('Id', id)
+            .single();
+
+        if (error) throw error;
+        res.json(toSnakeCase(user));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get Movie Comments
+app.get('/api/movies/:id/comments', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Comments')
+            .select('*, Users(Username, AvatarUrl, Rank)')
+            .eq('MovieId', id)
+            .is('ParentCommentId', null)
+            .order('CreatedAt', { ascending: false });
+
+        if (error) throw error;
+
+        // Flatten the Users object into the comment object to match previous structure
+        const flattened = data.map(c => ({
+            ...c,
+            Username: c.Users.Username,
+            AvatarUrl: c.Users.AvatarUrl,
+            Rank: c.Users.Rank
+        }));
+
+        res.json(toSnakeCase(flattened));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Add Comment
+app.post('/api/comments', async (req, res) => {
+    const { userId, movieId, content, parentCommentId } = req.body;
+    try {
+        const { data, error } = await supabase
+            .from('Comments')
+            .insert({
+                UserId: userId,
+                MovieId: movieId,
+                Content: content,
+                ParentCommentId: parentCommentId || null
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(toSnakeCase({ commentId: data.Id }));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Like Comment
+app.post('/api/comments/:id/like', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Fetch current likes
+        const { data: comment, error: fetchError } = await supabase
+            .from('Comments')
+            .select('Likes')
+            .eq('Id', id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const { data, error } = await supabase
+            .from('Comments')
+            .update({ Likes: (comment.Likes || 0) + 1 })
+            .eq('Id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ likes: data.Likes });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Delete Comment
+app.delete('/api/comments/:id', async (req, res) => {
+    const { id } = req.params;
+    const { userId } = req.body;
+    try {
+        const { error, count } = await supabase
+            .from('Comments')
+            .delete({ count: 'exact' })
+            .eq('Id', id)
+            .eq('UserId', userId);
+
+        if (error) throw error;
+
+        if (count > 0) {
+            res.json({ success: true });
+        } else {
+            res.status(403).json({ message: 'Unauthorized or comment not found' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get User Notifications
+app.get('/api/users/:id/notifications', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Notifications')
+            .select('*')
+            .eq('UserId', id)
+            .order('CreatedAt', { ascending: false });
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Update Movie Views
+app.post('/api/movies/:id/views', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data: movie, error: fetchError } = await supabase
+            .from('Movies')
+            .select('Views')
+            .eq('Id', id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        await supabase
+            .from('Movies')
+            .update({ Views: (movie.Views || 0) + 1 })
+            .eq('Id', id);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Market Routes
+app.get('/api/items', async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('Items').select('*');
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/users/:id/inventory', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Join with Items to get details
+        const { data, error } = await supabase
+            .from('UserItems')
+            .select('*, Items(*)')
+            .eq('UserId', id);
+
+        if (error) throw error;
+
+        // Flatten
+        const flattened = data.map(ui => ({
+            Id: ui.Id,
+            ItemId: ui.ItemId,
+            Quantity: ui.Quantity,
+            Name: ui.Items.Name,
+            Description: ui.Items.Description,
+            Icon: ui.Items.Icon,
+            Type: ui.Items.Type
+        }));
+
+        res.json(toSnakeCase(flattened));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/market/buy', async (req, res) => {
+    const { userId, itemId } = req.body;
+    try {
+        // 1. Get Item Price
+        const { data: item } = await supabase.from('Items').select('Price').eq('Id', itemId).single();
+        if (!item) return res.status(400).json({ success: false, message: 'Item not found' });
+
+        // 2. Get User Stones
+        const { data: user } = await supabase.from('Users').select('Stones').eq('Id', userId).single();
+        if (!user) return res.status(400).json({ success: false, message: 'User not found' });
+
+        if (user.Stones < item.Price) {
+            return res.json(toSnakeCase({ success: false, message: 'Not enough stones' }));
+        }
+
+        // 3. Deduct Stones
+        await supabase.from('Users').update({ Stones: user.Stones - item.Price }).eq('Id', userId);
+
+        // 4. Add to Inventory (Upsert logic: increment if exists)
+        // Check existing
+        const { data: existingItem } = await supabase
+            .from('UserItems')
+            .select('Quantity')
+            .eq('UserId', userId)
+            .eq('ItemId', itemId)
+            .maybeSingle();
+
+        if (existingItem) {
+            await supabase
+                .from('UserItems')
+                .update({ Quantity: existingItem.Quantity + 1 })
+                .eq('UserId', userId)
+                .eq('ItemId', itemId);
+        } else {
+            await supabase
+                .from('UserItems')
+                .insert({ UserId: userId, ItemId: itemId, Quantity: 1 });
+        }
+
+        // 5. Log Transaction
+        await supabase.from('Transactions').insert({ UserId: userId, ItemId: itemId, Price: item.Price });
+
+        res.json(toSnakeCase({ success: true, message: 'Purchase successful', newBalance: user.Stones - item.Price }));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Episode Routes
+app.get('/api/movies/:id/episodes', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Episodes')
+            .select('*')
+            .eq('MovieId', id)
+            .order('EpisodeNumber', { ascending: true });
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/episodes', async (req, res) => {
+    const { movie_id, title, episode_number, video_url, duration } = req.body;
+    try {
+        const { data, error } = await supabase
+            .from('Episodes')
+            .insert({
+                MovieId: movie_id,
+                Title: title,
+                EpisodeNumber: episode_number,
+                VideoUrl: video_url,
+                Duration: duration || 0
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(toSnakeCase({ id: data.Id }));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.put('/api/episodes/:id', async (req, res) => {
+    const { id } = req.params;
+    const { title, episode_number, video_url, duration } = req.body;
+    try {
+        const { error } = await supabase
+            .from('Episodes')
+            .update({
+                Title: title,
+                EpisodeNumber: episode_number,
+                VideoUrl: video_url,
+                Duration: duration || 0
+            })
+            .eq('Id', id);
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/episodes/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await supabase
+            .from('Episodes')
+            .delete()
+            .eq('Id', id);
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const { username, rank, exp, stones, mysteryBags } = req.body;
+    try {
+        const { data, error } = await supabase
+            .from('Users')
+            .update({
+                Username: username,
+                Rank: rank,
+                Exp: exp,
+                Stones: stones,
+                MysteryBags: mysteryBags || 0
+            })
+            .eq('Id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await supabase
+            .from('Users')
+            .delete()
+            .eq('Id', id);
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Favorites Routes
+app.post('/api/favorites', async (req, res) => {
+    const { userId, movieId } = req.body;
+    try {
+        const { error } = await supabase
+            .from('Favorites')
+            .insert({ UserId: userId, MovieId: movieId });
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/favorites/:userId/:movieId', async (req, res) => {
+    const { userId, movieId } = req.params;
+    try {
+        const { error } = await supabase
+            .from('Favorites')
+            .delete()
+            .eq('UserId', userId)
+            .eq('MovieId', movieId);
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/users/:id/favorites', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Favorites')
+            .select('*, Movies(*)')
+            .eq('UserId', id);
+
+        if (error) throw error;
+
+        // Transform to match expected format (flatten Movies)
+        const result = data.map(f => ({
+            ...f.Movies,
+            FavoriteId: f.Id,
+            FavoritedAt: f.CreatedAt
+        }));
+
+        res.json(toSnakeCase(result));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/users/:userId/favorites/:movieId', async (req, res) => {
+    const { userId, movieId } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Favorites')
+            .select('Id')
+            .eq('UserId', userId)
+            .eq('MovieId', movieId)
+            .maybeSingle();
+
+        if (error) throw error;
+        res.json({ is_favorite: !!data });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Watch History Routes
+app.post('/api/watch-history', async (req, res) => {
+    const { userId, movieId, episodeId, progressSeconds } = req.body;
+    try {
+        // Upsert logic
+        const { error } = await supabase
+            .from('WatchHistory')
+            .upsert({
+                UserId: userId,
+                MovieId: movieId,
+                EpisodeId: episodeId || null,
+                ProgressSeconds: progressSeconds,
+                WatchedAt: new Date()
+            }, { onConflict: 'UserId, MovieId' });
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/users/:id/history', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('WatchHistory')
+            .select('*, Movies(*), Episodes(*)')
+            .eq('UserId', id)
+            .order('WatchedAt', { ascending: false });
+
+        if (error) throw error;
+
+        // Transform
+        const result = data.map(h => ({
+            ...h.Movies,
+            EpisodeNumber: h.Episodes?.EpisodeNumber,
+            EpisodeTitle: h.Episodes?.Title,
+            ProgressSeconds: h.ProgressSeconds,
+            WatchedAt: h.WatchedAt,
+            LastWatchedAt: h.WatchedAt, // Alias for frontend
+            Duration: h.Episodes?.Duration || 0 // Include duration
+        }));
+
+        res.json(toSnakeCase(result));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Playlist Routes
+// Playlist Routes (Disabled - Table Missing)
+app.get('/api/users/:id/playlists', async (req, res) => {
+    res.json([]);
+});
+
+app.post('/api/playlists', async (req, res) => {
+    res.status(501).json({ message: 'Not implemented yet' });
+});
+
+app.post('/api/playlists/:id/movies', async (req, res) => {
+    res.status(501).json({ message: 'Not implemented yet' });
+});
+
+app.get('/api/playlists/:id/movies', async (req, res) => {
+    res.json([]);
+});
+
+// Gamification Routes
+// Gamification Routes
+// Gamification Routes
+app.get('/api/leaderboard/level', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('Users')
+            .select('Username, Rank, Exp, AvatarUrl')
+            .order('Rank', { ascending: false })
+            .order('Exp', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/leaderboard/wealth', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('Users')
+            .select('Username, Stones, AvatarUrl')
+            .order('Stones', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/leaderboard/mounts', async (req, res) => {
+    try {
+        // Placeholder: Top pets by Elo
+        const { data, error } = await supabase
+            .from('Pets')
+            .select('Name, Elo, VisualUrl, Users(Username)')
+            .order('Elo', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+
+        const result = data.map(p => ({
+            Username: p.Users?.Username,
+            PetName: p.Name,
+            Elo: p.Elo,
+            VisualUrl: p.VisualUrl
+        }));
+
+        res.json(toSnakeCase(result));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+    // Default to level
+    try {
+        const { data, error } = await supabase
+            .from('Users')
+            .select('Username, Rank, Exp, AvatarUrl')
+            .order('Rank', { ascending: false })
+            .order('Exp', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+        res.json(toSnakeCase(data));
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Duplicate routes removed
+
+
+
+// Start Server
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
