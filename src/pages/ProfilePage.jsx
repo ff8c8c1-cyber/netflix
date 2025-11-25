@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
     User, Edit, Save, X, Trophy, Star, Calendar,
     TrendingUp, Bell, Shield, Crown, MapPin,
-    Mail, Clock, Award, Play
+    Mail, Clock, Award, Play, Loader
 } from 'lucide-react';
 import { useGameStore, RANKS, SECTS, ITEMS } from '../store/useGameStore';
 import { useNavigate } from 'react-router-dom';
 import { userService, reviewService, watchHistoryService } from '../lib/services';
 import { API_BASE_URL } from '../config/api';
-import Avatar3D from '../components/character/Avatar3D';
+import BuffDisplay from '../components/BuffDisplay';
 
 const ProfilePage = () => {
     const user = useGameStore(state => state.user);
@@ -26,6 +26,8 @@ const ProfilePage = () => {
     const [playlists, setPlaylists] = useState([]);
     const [vipStatus, setVipStatus] = useState('none');
     const [loading, setLoading] = useState(true);
+    const [usingItemId, setUsingItemId] = useState(null);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         if (!user) {
