@@ -478,9 +478,15 @@ const SectPage = () => {
         );
     }
 
+
     // --- DASHBOARD VIEW ---
+    if (!mySectData) {
+        return <div className="text-white p-8">Đang tải dữ liệu...</div>;
+    }
+
     const { sect, member, members, buildings } = mySectData;
-    const isLeader = member.Role === 'Leader' || member.Role === 'Elder';
+    const isLeader = member?.Role === 'Leader' || member?.Role === 'Elder';
+
 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-8 ml-64">
