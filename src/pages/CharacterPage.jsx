@@ -4,15 +4,16 @@ import Avatar3D from '../components/character/Avatar3D';
 
 const CharacterPage = () => {
     const [user, setUser] = useState(null);
-    const [avatarUrl, setAvatarUrl] = useState('https://models.readyplayer.me/6538b358e1b3ff34ac2a84e0.glb');
+    // Using verified working Ready Player Me avatars
+    const [avatarUrl, setAvatarUrl] = useState('https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb');
     const [autoRotate, setAutoRotate] = useState(true);
     const [loading, setLoading] = useState(false);
 
-    // Sample avatar URLs for testing
+    // Sample avatar URLs for testing (verified working)
     const sampleAvatars = [
-        'https://models.readyplayer.me/6538b358e1b3ff34ac2a84e0.glb',
-        'https://models.readyplayer.me/654b6c0e13a2ba6fd645c6a7.glb',
-        'https://models.readyplayer.me/654b6d7213a2ba6fd645c6f5.glb',
+        'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb', // Male 1
+        'https://models.readyplayer.me/64bfa1c90e72c63d7c3934f8.glb', // Female 1  
+        'https://models.readyplayer.me/64bfa2400e72c63d7c39355a.glb', // Male 2
     ];
 
     React.useEffect(() => {
@@ -61,8 +62,8 @@ const CharacterPage = () => {
                                     <button
                                         onClick={() => setAutoRotate(!autoRotate)}
                                         className={`p-2 rounded-lg transition-colors ${autoRotate
-                                                ? 'bg-cyan-600 text-white'
-                                                : 'bg-gray-700 text-gray-300'
+                                            ? 'bg-cyan-600 text-white'
+                                            : 'bg-gray-700 text-gray-300'
                                             }`}
                                         title="Auto Rotate"
                                     >

@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Environment, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
 
 function AvatarModel({ avatarUrl }) {
     const { scene } = useGLTF(avatarUrl);
@@ -25,7 +25,8 @@ function Loader() {
 }
 
 export default function Avatar3D({
-    avatarUrl = 'https://models.readyplayer.me/6538b358e1b3ff34ac2a84e0.glb',
+    // Using Ready Player Me's official demo avatar that's guaranteed to work
+    avatarUrl = 'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb',
     autoRotate = false,
     showControls = true,
     className = ''
