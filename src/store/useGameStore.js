@@ -76,6 +76,11 @@ export const useGameStore = create((set, get) => ({
     userStats: null,
     dbInitialized: false,
 
+    // Stats state
+    characterStats: null,
+    activeBuffs: [],
+    statsLoading: false,
+
     // Logs for gamification
     logs: [
         { id: 1, text: 'Chào mừng đạo hữu quay lại Tiên Giới!', type: 'sys' },
@@ -284,6 +289,64 @@ export const useGameStore = create((set, get) => ({
     },
     setIsPlaying: (isPlaying) => set({ isPlaying }),
     setMovies: (movies) => set({ movies }),
+
+    // Stats methods
+    fetchCharacterStats: async () => {
+        const user = get().user;
+        if (!user?.id) return;
+
+        set({ statsLoading: true });
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/users/${user.id}/stats`);
+            const data = await res.json();
+
+            set({
+                characterStats: data,
+                activeBuffs: data.buffs || [],
+                statsLoading: false
+            });
+            return data;
+        } catch (err) {
+            console.error('Fetch stats error:', err);
+            set({ statsLoading: false });
+        }
+    },
+
+    refreshStats: async () => {
+        await get().fetchCharacterStats();
+    },
+
+    applyBuff: async (buffType, buffValue, isPercentage, durationMinutes, sourceType, sourceItemId) => {
+        const user = get().user;
+        if (!user?.id) return;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/buffs/apply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: user.id,
+                    buffType,
+                    buffValue,
+                    isPercentage,
+                    durationMinutes,
+                    sourceType: sourceType || 'pill',
+                    sourceItemId
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                // Refresh stats to get updated totals
+                await get().fetchCharacterStats();
+                return data.buff;
+            }
+        } catch (err) {
+            console.error('Apply buff error:', err);
+            throw err;
+        }
+    },
 
     updateExp: (amount) => set((state) => {
         if (!state.user) return state;

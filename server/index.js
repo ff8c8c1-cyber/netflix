@@ -32,6 +32,11 @@ app.use('/api/sects', require('./sect_routes').router);
 console.log('Registering upload routes...');
 app.use('/api/upload', require('./upload_routes'));
 
+// Stats & Buff Routes
+app.use('/api/users', require('./stats_routes'));
+app.use('/api/buffs', require('./buff_routes'));
+console.log('Stats and Buff routes loaded');
+
 // Helper to convert PascalCase to snake_case
 const toSnakeCase = (obj) => {
     if (Array.isArray(obj)) {

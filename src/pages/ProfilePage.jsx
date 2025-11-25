@@ -9,9 +9,12 @@ import { useNavigate } from 'react-router-dom';
 import { userService, reviewService, watchHistoryService } from '../lib/services';
 import { API_BASE_URL } from '../config/api';
 import BuffDisplay from '../components/BuffDisplay';
+import StatsPanel from '../components/Stats/StatsPanel';
 
 const ProfilePage = () => {
     const user = useGameStore(state => state.user);
+    const characterStats = useGameStore(state => state.characterStats);
+    const fetchCharacterStats = useGameStore(state => state.fetchCharacterStats);
     const updateUserProfile = useGameStore(state => state.updateUserProfile);
     const navigate = useNavigate();
 
@@ -62,6 +65,8 @@ const ProfilePage = () => {
                 console.error('Error loading user data:', error);
             } finally {
                 setLoading(false);
+                // Fetch character stats
+                fetchCharacterStats();
             }
         };
 
@@ -295,6 +300,16 @@ const ProfilePage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Character Stats Panel */}
+                {characterStats && (
+                    <div className="mb-8">
+                        <StatsPanel
+                            stats={characterStats}
+                            buffs={characterStats.buffs || []}
+                        />
+                    </div>
+                )}
 
                 {/* Buff Display */}
                 <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
