@@ -1278,6 +1278,53 @@ function getVipExpMultiplier(vipStatus) {
 
 
 // ============================================
+// INVENTORY SYSTEM
+// ============================================
+
+// Get user's inventory
+app.get('/api/users/:userId/inventory', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const { data, error } = await supabase
+            .from('UserInventory')
+            .select(`
+                Quantity,
+                Items (
+                    Id,
+                    Name,
+                    Type,
+                    Rarity,
+                    Effect,
+                    IconUrl,
+                    Description
+                )
+            `)
+            .eq('UserId', userId);
+
+        if (error) throw error;
+
+        // Transform to flatten structure
+        const inventory = data.map(item => ({
+            id: item.Items.Id,
+            name: item.Items.Name,
+            type: item.Items.Type,
+            rarity: item.Items.Rarity,
+            effect: item.Items.Effect,
+            iconUrl: item.Items.IconUrl,
+            description: item.Items.Description,
+            quantity: item.Quantity
+        }));
+
+        res.json(inventory);
+
+    } catch (err) {
+        console.error('Get inventory error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ============================================
 // ITEM USAGE SYSTEM
 // ============================================
 
