@@ -8,6 +8,7 @@ import { useGameStore, RANKS, SECTS, ITEMS } from '../store/useGameStore';
 import { useNavigate } from 'react-router-dom';
 import { userService, reviewService, watchHistoryService } from '../lib/services';
 import { API_BASE_URL } from '../config/api';
+import Avatar3D from '../components/character/Avatar3D';
 
 const ProfilePage = () => {
     const user = useGameStore(state => state.user);
@@ -163,8 +164,8 @@ const ProfilePage = () => {
                                         </h1>
                                         {vipStatus !== 'none' && (
                                             <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${vipStatus === 'lifetime'
-                                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                                                    : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                                : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
                                                 }`}>
                                                 <Crown size={16} />
                                                 {vipStatus === 'lifetime' ? 'VIP Vĩnh Viễn' : 'VIP'}
@@ -291,6 +292,30 @@ const ProfilePage = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* 3D Character Preview */}
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Crown className="text-cyan-400" />
+                            Nhân Vật 3D
+                        </h3>
+                        <button
+                            onClick={() => window.location.href = '/character'}
+                            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors text-sm"
+                        >
+                            Tùy Chỉnh
+                        </button>
+                    </div>
+                    <Avatar3D
+                        avatarUrl={user.avatarUrl || 'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb'}
+                        autoRotate={true}
+                        className="h-64"
+                    />
+                    <p className="text-center text-gray-400 text-sm mt-2">
+                        🖱️ Kéo để xoay | ⚡ Dynamic 4D Evolution System
+                    </p>
                 </div>
 
                 {/* Achievements & Activity */}
