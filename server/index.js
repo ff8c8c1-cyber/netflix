@@ -1580,6 +1580,168 @@ app.get('/api/users/:userId/stats', async (req, res) => {
     }
 });
 
+// VIP Status Route
+app.get('/api/vip/status/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('Users')
+            .select('VipStatus, VipExpiresAt')
+            .eq('Id', userId)
+            .single();
+
+        if (error) throw error;
+
+        res.json({
+            vipStatus: data?.VipStatus || 'none',
+            vipExpiresAt: data?.VipExpiresAt || null
+        });
+    } catch (err) {
+        console.error('VIP Status Error:', err);
+        res.json({ vipStatus: 'none', vipExpiresAt: null });
+    }
+});
+
+// VIP Purchase Route
+app.post('/api/vip/purchase', async (req, res) => {
+    const { userId, vipType } = req.body;
+
+    try {
+        // Define costs
+        const costs = {
+            monthly: 200,
+            lifetime: 2000
+        };
+
+        const cost = costs[vipType];
+        if (!cost) {
+            return res.status(400).json({ message: 'Invalid VIP type' });
+        }
+
+        // Get user's current stones and VIP status
+        const { data: user, error: userError } = await supabase
+            .from('Users')
+            .select('Stones, VipStatus')
+            .eq('Id', userId)
+            .single();
+
+        if (userError) throw userError;
+
+        // Check if user has enough stones
+        if (user.Stones < cost) {
+            return res.status(400).json({
+                success: false,
+                message: `Không đủ Đá Linh Thạch! Cần ${cost}, hiện có ${user.Stones}`
+            });
+        }
+
+        // Calculate expiration date
+        let expiresAt = null;
+        if (vipType === 'monthly') {
+            const expirationDate = new Date();
+            expirationDate.setDate(expirationDate.getDate() + 30);
+            expiresAt = expirationDate.toISOString();
+        }
+        // lifetime doesn't expire
+
+        // Update user: deduct stones and set VIP status
+        const { error: updateError } = await supabase
+            .from('Users')
+            .update({
+                Stones: user.Stones - cost,
+                VipStatus: vipType,
+                VipExpiresAt: expiresAt
+            })
+            .eq('Id', userId);
+
+        if (updateError) throw updateError;
+
+        res.json({
+            success: true,
+            message: `Mua VIP ${vipType === 'monthly' ? 'Tháng' : 'Vĩnh Viễn'} thành công!`,
+            vipStatus: vipType,
+            expiresAt: expiresAt,
+            newBalance: user.Stones - cost
+        });
+
+    } catch (err) {
+        console.error('VIP Purchase Error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi mua VIP',
+            error: err.message
+        });
+    }
+});
+
+// VIP Daily Claim Route
+app.post('/api/vip/daily-claim', async (req, res) => {
+    const { userId } = req.body;
+
+    try {
+        // Get user's VIP status and last claim
+        const { data: user, error: userError } = await supabase
+            .from('Users')
+            .select('VipStatus, VipExpiresAt, VipLastClaim, Stones')
+            .eq('Id', userId)
+            .single();
+
+        if (userError) throw userError;
+
+        // Check if user has VIP
+        if (!user.VipStatus || user.VipStatus === 'none') {
+            return res.status(400).json({ message: 'Bạn chưa có VIP!' });
+        }
+
+        // Check if VIP expired
+        if (user.VipExpiresAt && new Date(user.VipExpiresAt) < new Date()) {
+            return res.status(400).json({ message: 'VIP của bạn đã hết hạn!' });
+        }
+
+        // Check if already claimed today
+        if (user.VipLastClaim) {
+            const lastClaim = new Date(user.VipLastClaim);
+            const now = new Date();
+            const hoursSince = (now - lastClaim) / (1000 * 60 * 60);
+
+            if (hoursSince < 24) {
+                const hoursLeft = Math.ceil(24 - hoursSince);
+                return res.status(400).json({
+                    message: `Bạn đã nhận hôm nay! Quay lại sau ${hoursLeft} giờ.`
+                });
+            }
+        }
+
+        // Calculate claim amount
+        const claimAmount = user.VipStatus === 'lifetime' ? 200 : 100;
+
+        // Update user: add stones and set last claim
+        const { error: updateError } = await supabase
+            .from('Users')
+            .update({
+                Stones: user.Stones + claimAmount,
+                VipLastClaim: new Date().toISOString()
+            })
+            .eq('Id', userId);
+
+        if (updateError) throw updateError;
+
+        res.json({
+            success: true,
+            message: 'Nhận đá hàng ngày thành công!',
+            amount: claimAmount,
+            newBalance: user.Stones + claimAmount
+        });
+
+    } catch (err) {
+        console.error('VIP Daily Claim Error:', err);
+        res.status(500).json({
+            message: 'Lỗi server',
+            error: err.message
+        });
+    }
+});
+
 // Start Server
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
