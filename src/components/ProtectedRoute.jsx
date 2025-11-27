@@ -1,40 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { authService } from '../lib/services/authService';
-import { PageSkeleton } from './LoadingSkeleton';
+import { useGameStore } from '../store/useGameStore';
 
 /**
  * Protected Route Component
  * Redirects to /login if user is not authenticated
  */
 const ProtectedRoute = ({ children }) => {
-    const [loading, setLoading] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const { user } = useGameStore();
 
-    useEffect(() => {
-        checkAuth();
-    }, []);
-
-    const checkAuth = async () => {
-        try {
-            const session = await authService.getSession();
-            setIsAuthenticated(!!session);
-        } catch (error) {
-            console.error('Auth check error:', error);
-            setIsAuthenticated(false);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return <PageSkeleton />;
-    }
-
-    if (!isAuthenticated) {
+    // Check if user is authenticated
+    if (!user || !user.id) {
+        // Redirect to login page
         return <Navigate to="/login" replace />;
     }
 
+    // User is authenticated, render children
     return children;
 };
 

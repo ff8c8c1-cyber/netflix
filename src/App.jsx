@@ -80,7 +80,7 @@ function App() {
                             <Route path="watch/:id" element={<WatchPage />} />
                             <Route path="cultivation" element={<CultivationPage />} />
                             <Route path="pet" element={<PetPage />} />
-                            <Route path="pvp" element={<PvP Page />} />
+                            <Route path="pvp" element={<PvPPage />} />
                             <Route path="sect" element={<SectPage />} />
                             <Route path="vip" element={<VIPPage />} />
                             <Route path="alchemy" element={<AlchemyPage />} />

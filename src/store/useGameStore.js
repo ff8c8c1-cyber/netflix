@@ -282,7 +282,15 @@ export const useGameStore = create((set, get) => ({
     },
 
     // App methods
-    setUser: (user) => set({ user }),
+    setUser: (userData) => {
+        // Update user state with auth data
+        set({
+            user: userData,
+            session: { user: userData }
+        });
+        // Persist to localStorage for session persistence
+        localStorage.setItem('user', JSON.stringify(userData));
+    },
     setSelectedMovie: (movie) => {
         localStorage.setItem('selectedMovie', JSON.stringify(movie));
         set({ selectedMovie: movie });
