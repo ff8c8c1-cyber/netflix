@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('./supabase');
+const { supabase } = require('../config/supabase');
 
 // In-memory store for active battles (Simple implementation)
 // In production, use Redis or Database

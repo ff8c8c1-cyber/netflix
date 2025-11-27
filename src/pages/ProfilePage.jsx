@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
     User, Edit, Save, X, Trophy, Star, Calendar,
     TrendingUp, Bell, Shield, Crown, MapPin,
-    Mail, Clock, Award, Play, Loader
+    Mail, Clock, Award, Play, Loader, Package
 } from 'lucide-react';
 import { useGameStore, RANKS, SECTS, ITEMS } from '../store/useGameStore';
 import { useNavigate } from 'react-router-dom';
 import { userService, reviewService, watchHistoryService } from '../lib/services';
 import { API_BASE_URL } from '../config/api';
 import BuffDisplay from '../components/BuffDisplay';
+import ItemInventory from '../components/ItemInventory';
+import toast, { Toaster } from 'react-hot-toast';
 import StatsPanel from '../components/Stats/StatsPanel';
 
 const ProfilePage = () => {
@@ -30,7 +32,6 @@ const ProfilePage = () => {
     const [vipStatus, setVipStatus] = useState('none');
     const [loading, setLoading] = useState(true);
     const [usingItemId, setUsingItemId] = useState(null);
-    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         if (!user) {
@@ -73,24 +74,6 @@ const ProfilePage = () => {
         loadUserData();
     }, [user, navigate]);
 
-    if (!user) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-[#020617] to-[#0a0a0a] flex items-center justify-center">
-                <div className="text-center">
-                    <Shield size={64} className="text-gray-600 mx-auto mb-4" />
-                    <h2 className="text-xl text-white font-medium mb-2">Yêu cầu đăng nhập</h2>
-                    <p className="text-gray-400 mb-4">Hãy đăng nhập để xem hồ sơ của bạn</p>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                    >
-                        Về trang chủ
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     const handleSaveProfile = async () => {
         try {
             await updateUserProfile(editForm);
@@ -110,6 +93,36 @@ const ProfilePage = () => {
         if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} tuần trước`;
         return `${Math.floor(diffInDays / 30)} tháng trước`;
     };
+
+    const handleItemUsed = (message) => {
+        toast.success(message, {
+            duration: 3000,
+            position: 'top-center',
+            style: {
+                background: '#1e293b',
+                color: '#fff',
+                border: '1px solid rgba(34, 211, 238, 0.3)'
+            }
+        });
+    };
+
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-[#020617] to-[#0a0a0a] flex items-center justify-center">
+                <div className="text-center">
+                    <Shield size={64} className="text-gray-600 mx-auto mb-4" />
+                    <h2 className="text-xl text-white font-medium mb-2">Yêu cầu đăng nhập</h2>
+                    <p className="text-gray-400 mb-4">Hãy đăng nhập để xem hồ sơ của bạn</p>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    >
+                        Về trang chủ
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
@@ -134,146 +147,142 @@ const ProfilePage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#020617] to-[#0a0a0a] p-6 md:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-[#020617] to-[#0a0a0a] p-8">
+            <Toaster />
             <div className="max-w-7xl mx-auto">
-                {/* Profile Header */}
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 md:p-8 mb-8">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                        {/* Avatar */}
-                        <div className="relative">
-                            <div className="w-32 h-32 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full p-1">
-                                <div className="w-full h-full bg-gray-900 rounded-full flex items-center justify-center">
-                                    <img
-                                        src={user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
-                                        alt={user.name}
-                                        className="w-28 h-28 rounded-full bg-gray-800"
-                                        onError={(e) => {
-                                            e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            {/* Rank Badge */}
-                            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                                <div className={`px-3 py-1 rounded-full text-xs font-bold ${RANKS[user.rank]?.color} bg-gray-900 border border-white/20`}>
-                                    {RANKS[user.rank]?.name}
-                                </div>
+                <div className="flex flex-col md:flex-row gap-8 mb-8">
+                    {/* Avatar Section */}
+                    <div className="w-full md:w-auto flex flex-col items-center">
+                        <div className="w-32 h-32 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full p-1 mb-4">
+                            <div className="w-full h-full bg-gray-900 rounded-full flex items-center justify-center overflow-hidden">
+                                <img
+                                    src={user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+                                    alt={user.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+                                    }}
+                                />
                             </div>
                         </div>
+                        {/* Rank Badge */}
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${RANKS[user.rank]?.color} bg-gray-900 border border-white/20`}>
+                            {RANKS[user.rank]?.name}
+                        </div>
+                    </div>
 
-                        {/* Profile Info */}
-                        <div className="flex-1 text-center md:text-left">
-                            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h1 className="text-3xl md:text-4xl font-bold text-white">
-                                            {user.name}
-                                        </h1>
-                                        {vipStatus !== 'none' && (
-                                            <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${vipStatus === 'lifetime'
-                                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                                                : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
-                                                }`}>
-                                                <Crown size={16} />
-                                                {vipStatus === 'lifetime' ? 'VIP Vĩnh Viễn' : 'VIP'}
-                                            </div>
-                                        )}
+                    {/* Profile Info */}
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h1 className="text-3xl md:text-4xl font-bold text-white">
+                                        {user.name}
+                                    </h1>
+                                    {vipStatus !== 'none' && (
+                                        <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${vipStatus === 'lifetime'
+                                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                            : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                                            }`}>
+                                            <Crown size={16} />
+                                            {vipStatus === 'lifetime' ? 'VIP Vĩnh Viễn' : 'VIP'}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex flex-col md:flex-row md:items-center gap-2 text-gray-400">
+                                    <div className="flex items-center gap-1">
+                                        <Mail size={16} />
+                                        {user.email}
                                     </div>
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2 text-gray-400">
-                                        <div className="flex items-center gap-1">
-                                            <Mail size={16} />
-                                            {user.email}
-                                        </div>
-                                        <div className="hidden md:block">•</div>
-                                        <div className="flex items-center gap-1">
-                                            <Calendar size={16} />
-                                            Tham gia {user.created_at ? formatTimeAgo(user.created_at) : 'gần đây'}
-                                        </div>
+                                    <div className="hidden md:block">•</div>
+                                    <div className="flex items-center gap-1">
+                                        <Calendar size={16} />
+                                        Tham gia {user.created_at ? formatTimeAgo(user.created_at) : 'gần đây'}
                                     </div>
                                 </div>
-
-                                {!isEditing && (
-                                    <button
-                                        onClick={() => setIsEditing(true)}
-                                        className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                                    >
-                                        <Edit size={16} />
-                                        Chỉnh sửa
-                                    </button>
-                                )}
                             </div>
 
-                            {/* Edit Form */}
-                            {isEditing && (
-                                <div className="bg-gray-800/50 p-4 rounded-lg mb-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                            <label className="block text-gray-300 text-sm font-medium mb-2">
-                                                Tên hiển thị
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={editForm.username}
-                                                onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
-                                                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-cyan-500 outline-none"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-gray-300 text-sm font-medium mb-2">
-                                                Email
-                                            </label>
-                                            <input
-                                                type="email"
-                                                value={editForm.email}
-                                                onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
-                                                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-cyan-500 outline-none"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={handleSaveProfile}
-                                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                                        >
-                                            <Save size={16} />
-                                            Lưu
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setIsEditing(false);
-                                                setEditForm({
-                                                    username: user.name || '',
-                                                    email: user.email || ''
-                                                });
-                                            }}
-                                            className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                                        >
-                                            <X size={16} />
-                                            Hủy
-                                        </button>
-                                    </div>
-                                </div>
+                            {!isEditing && (
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <Edit size={16} />
+                                    Chỉnh sửa
+                                </button>
                             )}
+                        </div>
 
-                            {/* Stats Summary */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-cyan-400">{user.exp}</div>
-                                    <div className="text-gray-400 text-sm">EXP</div>
+                        {/* Edit Form */}
+                        {isEditing && (
+                            <div className="bg-gray-800/50 p-4 rounded-lg mb-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label className="block text-gray-300 text-sm font-medium mb-2">
+                                            Tên hiển thị
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editForm.username}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-cyan-500 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-300 text-sm font-medium mb-2">
+                                            Email
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={editForm.email}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-cyan-500 outline-none"
+                                            disabled
+                                        />
+                                    </div>
                                 </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-yellow-400">{user.stones.toLocaleString()}</div>
-                                    <div className="text-gray-400 text-sm">Linh Thạch</div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={handleSaveProfile}
+                                        className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                                    >
+                                        <Save size={16} />
+                                        Lưu
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setIsEditing(false);
+                                            setEditForm({
+                                                username: user.name || '',
+                                                email: user.email || ''
+                                            });
+                                        }}
+                                        className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                                    >
+                                        <X size={16} />
+                                        Hủy
+                                    </button>
                                 </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-purple-400">{user.rank + 1}</div>
-                                    <div className="text-gray-400 text-sm">Rank</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-green-400">15</div>
-                                    <div className="text-gray-400 text-sm">Sư huynh</div>
-                                </div>
+                            </div>
+                        )}
+
+                        {/* Stats Summary */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-cyan-400">{user.exp}</div>
+                                <div className="text-gray-400 text-sm">EXP</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-yellow-400">{user.stones.toLocaleString()}</div>
+                                <div className="text-gray-400 text-sm">Linh Thạch</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-purple-400">{user.rank + 1}</div>
+                                <div className="text-gray-400 text-sm">Rank</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-green-400">15</div>
+                                <div className="text-gray-400 text-sm">Sư huynh</div>
                             </div>
                         </div>
                     </div>
@@ -318,6 +327,17 @@ const ProfilePage = () => {
                         Hiệu Ứng Đang Hoạt Động
                     </h3>
                     <BuffDisplay userId={user.id} />
+                </div>
+
+                {/* Inventory */}
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <Package className="text-cyan-400" />
+                        Túi Đồ
+                    </h3>
+                    {user && (
+                        <ItemInventory userId={user.id} onItemUsed={handleItemUsed} />
+                    )}
                 </div>
 
                 {/* Achievements & Activity */}

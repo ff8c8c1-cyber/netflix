@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, ShoppingBag, Users, User, Heart, Clock, Menu, Zap, Dog, Swords, Video, X, Crown, UserCircle } from 'lucide-react';
+import { Home, ShoppingBag, Users, User, Heart, Clock, Menu, Zap, Dog, Swords, Video, X, Crown, UserCircle, Flame } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import clsx from 'clsx';
 
@@ -7,6 +7,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     const navItems = [
         { id: 'home', label: 'Trang Chủ', icon: Home, path: '/' },
         { id: 'market', label: 'Vạn Bảo Lâu', icon: ShoppingBag, path: '/market' },
+        { id: 'alchemy', label: 'Luyện Đan', icon: Flame, path: '/alchemy' },
         { id: 'cultivation', label: 'Tu Luyện', icon: Zap, path: '/cultivation' },
         { id: 'pet', label: 'Linh Thú', icon: Dog, path: '/pet' },
         { id: 'pvp', label: 'Thách Đấu', icon: Swords, path: '/pvp' },

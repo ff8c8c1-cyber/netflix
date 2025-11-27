@@ -1,22 +1,41 @@
+require('dotenv').config();
+const fetch = require('node-fetch');
+if (!global.fetch) {
+    global.fetch = fetch;
+    global.Headers = fetch.Headers;
+    global.Request = fetch.Request;
+    global.Response = fetch.Response;
+}
 const express = require('express');
 const cors = require('cors');
-const { supabase } = require('./supabase'); // Use Supabase
-require('dotenv').config();
-const pvpRoutes = require('./pvp_routes');
+const { supabase } = require('./config/supabase'); // Use Supabase
+const pvpRoutes = require('./routes/pvp_routes');
 
 const http = require('http');
-const { initializeSocket } = require('./socket');
+const { initializeSocket } = require('./config/socket');
 
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
+
 // Initialize Socket.io
 initializeSocket(server);
+
+// Import Middlewares
+const { requireAuth, verifyOwnership, optionalAuth, requireAdmin } = require('./middleware/auth');
+const { apiLimiter, authLimiter, actionLimiter, pvpLimiter } = require('./middleware/rateLimiter');
+const { sanitizeQuery } = require('./middleware/validation');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Apply global rate limiter to all API routes
+app.use('/api/', apiLimiter);
+
+// Sanitize all query parameters globally
+app.use(sanitizeQuery);
 
 // Request Logger
 app.use((req, res, next) => {
@@ -27,15 +46,24 @@ app.use((req, res, next) => {
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/api/pvp', pvpRoutes);
-app.use('/api/sects', require('./sect_routes').router);
-console.log('Registering upload routes...');
-app.use('/api/upload', require('./upload_routes'));
+// PvP Routes (with PvP rate limiter)
+app.use('/api/pvp', pvpLimiter, optionalAuth, pvpRoutes);
 
-// Stats & Buff Routes
-app.use('/api/users', require('./stats_routes'));
-app.use('/api/buffs', require('./buff_routes'));
+// Sect Routes (authenticated)
+app.use('/api/sects', requireAuth, require('./routes/sect_routes').router);
+
+// Upload Routes (authenticated + admin for some)
+console.log('Registering upload routes...');
+app.use('/api/upload', requireAuth, require('./routes/upload_routes'));
+
+// Stats & Buff Routes (authenticated + ownership verification)
+app.use('/api/users/:userId', requireAuth, verifyOwnership, require('./routes/stats_routes'));
+app.use('/api/buffs', requireAuth, require('./routes/buff_routes'));
+
+// Alchemy Routes (authenticated + action limiter for crafting)
+app.use('/api/alchemy', requireAuth, actionLimiter, require('./routes/alchemy_routes'));
 console.log('Stats and Buff routes loaded');
+console.log('Alchemy routes loaded');
 
 // Helper to convert PascalCase to snake_case
 const toSnakeCase = (obj) => {
@@ -698,29 +726,121 @@ app.get('/api/items', async (req, res) => {
 app.get('/api/users/:id/inventory', async (req, res) => {
     const { id } = req.params;
     try {
-        // Join with Items to get details
-        const { data, error } = await supabase
-            .from('UserItems')
-            .select('*, Items(*)')
+        // Get user inventory (changed from UserItems to UserInventory)
+        const { data: inventoryData, error: invError } = await supabase
+            .from('UserInventory')
+            .select('*')
             .eq('UserId', id);
 
-        if (error) throw error;
+        if (invError) throw invError;
 
-        // Flatten
-        const flattened = data.map(ui => ({
-            Id: ui.Id,
-            ItemId: ui.ItemId,
-            Quantity: ui.Quantity,
-            Name: ui.Items.Name,
-            Description: ui.Items.Description,
-            Icon: ui.Items.Icon,
-            Type: ui.Items.Type
-        }));
+        // If no inventory, return empty array
+        if (!inventoryData || inventoryData.length === 0) {
+            return res.json([]);
+        }
+
+        // Get all items manually (since Supabase can't auto-join)
+        const itemIds = inventoryData.map(inv => inv.ItemId);
+        const { data: itemsData, error: itemsError } = await supabase
+            .from('Items')
+            .select('*')
+            .in('Id', itemIds);
+
+        if (itemsError) throw itemsError;
+
+        // Create a map of items for easy lookup
+        const itemsMap = {};
+        itemsData.forEach(item => {
+            itemsMap[item.Id] = item;
+        });
+
+        // Combine inventory with item details
+        const flattened = inventoryData.map(inv => {
+            const item = itemsMap[inv.ItemId] || {};
+            return {
+                Id: inv.Id,
+                ItemId: inv.ItemId,
+                Quantity: inv.Quantity,
+                Name: item.Name || 'Unknown Item',
+                Description: item.Description || '',
+                Icon: item.IconUrl || '',
+                Type: item.Type || ''
+            };
+        });
 
         res.json(toSnakeCase(flattened));
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Inventory error:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+});
+
+// Get user's active buffs (moved from item_usage_routes.js)
+app.get('/api/users/:userId/buffs', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Delete expired buffs first
+        await supabase
+            .from('UserBuffs')
+            .delete()
+            .lt('ExpiresAt', new Date().toISOString())
+            .not('ExpiresAt', 'is', null);
+
+        // Get active buffs (removed auto-join which doesn't work)
+        const { data: buffs, error } = await supabase
+            .from('UserBuffs')
+            .select('*')
+            .eq('UserId', userId)
+            .eq('Active', true)
+            .or(`ExpiresAt.is.null,ExpiresAt.gt.${new Date().toISOString()}`);
+
+        if (error) {
+            console.error('Get buffs error:', error);
+            throw error;
+        }
+
+        // Get item details manually if buffs exist
+        let itemsMap = {};
+        if (buffs && buffs.length > 0) {
+            const itemIds = buffs.map(b => b.SourceItemId).filter(Boolean);
+            if (itemIds.length > 0) {
+                const { data: itemsData } = await supabase
+                    .from('Items')
+                    .select('Id, Name, IconUrl')
+                    .in('Id', itemIds);
+
+                if (itemsData) {
+                    itemsData.forEach(item => {
+                        itemsMap[item.Id] = item;
+                    });
+                }
+            }
+        }
+
+        // Calculate remaining time
+        const buffsList = (buffs || []).map(buff => {
+            const item = itemsMap[buff.SourceItemId] || {};
+            return {
+                id: buff.Id,
+                type: buff.BuffType,
+                value: buff.BuffValue,
+                isPercentage: buff.IsPercentage,
+                appliedAt: buff.AppliedAt,
+                expiresAt: buff.ExpiresAt,
+                itemName: item.Name || buff.BuffType.toUpperCase(),
+                itemIcon: item.IconUrl || '',
+                remainingSeconds: buff.ExpiresAt
+                    ? Math.max(0, Math.floor((new Date(buff.ExpiresAt) - new Date()) / 1000))
+                    : null
+            };
+        });
+
+        res.json({ buffs: buffsList });
+
+    } catch (err) {
+        console.error('Get buffs error:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 
@@ -743,9 +863,9 @@ app.post('/api/market/buy', async (req, res) => {
         await supabase.from('Users').update({ Stones: user.Stones - item.Price }).eq('Id', userId);
 
         // 4. Add to Inventory (Upsert logic: increment if exists)
-        // Check existing
+        // FIXED: Changed from UserItems to UserInventory
         const { data: existingItem } = await supabase
-            .from('UserItems')
+            .from('UserInventory')
             .select('Quantity')
             .eq('UserId', userId)
             .eq('ItemId', itemId)
@@ -753,23 +873,23 @@ app.post('/api/market/buy', async (req, res) => {
 
         if (existingItem) {
             await supabase
-                .from('UserItems')
+                .from('UserInventory')
                 .update({ Quantity: existingItem.Quantity + 1 })
                 .eq('UserId', userId)
                 .eq('ItemId', itemId);
         } else {
             await supabase
-                .from('UserItems')
+                .from('UserInventory')
                 .insert({ UserId: userId, ItemId: itemId, Quantity: 1 });
         }
 
-        // 5. Log Transaction
-        await supabase.from('Transactions').insert({ UserId: userId, ItemId: itemId, Price: item.Price });
+        // 5. Log Transaction (optional, check if table exists)
+        // await supabase.from('Transactions').insert({ UserId: userId, ItemId: itemId, Price: item.Price });
 
         res.json(toSnakeCase({ success: true, message: 'Purchase successful', newBalance: user.Stones - item.Price }));
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Market buy error:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 
@@ -1289,42 +1409,56 @@ function getVipExpMultiplier(vipStatus) {
 app.get('/api/users/:userId/inventory', async (req, res) => {
     try {
         const { userId } = req.params;
+        console.log('!!! EXECUTING INVENTORY ENDPOINT !!!');
+        // return res.json({ message: "DEBUG MODE" }); // Uncomment to force return
 
-        const { data, error } = await supabase
+        // 1. Get raw inventory
+        const { data: inventoryItems, error: invError } = await supabase
             .from('UserInventory')
-            .select(`
-                Quantity,
-                Items (
-                    Id,
-                    Name,
-                    Type,
-                    Rarity,
-                    Effect,
-                    IconUrl,
-                    Description
-                )
-            `)
+            .select('*')
             .eq('UserId', userId);
 
-        if (error) throw error;
+        if (invError) {
+            console.error('Inventory fetch failed:', invError);
+            return res.status(500).json({ message: 'Inventory error', error: invError.message });
+        }
 
-        // Transform to flatten structure
-        const inventory = data.map(item => ({
-            id: item.Items.Id,
-            name: item.Items.Name,
-            type: item.Items.Type,
-            rarity: item.Items.Rarity,
-            effect: item.Items.Effect,
-            iconUrl: item.Items.IconUrl,
-            description: item.Items.Description,
-            quantity: item.Quantity
-        }));
+        if (!inventoryItems || inventoryItems.length === 0) {
+            return res.json([]);
+        }
+
+        // 2. Get item details
+        const itemIds = inventoryItems.map(i => i.ItemId);
+        const { data: items, error: itemsError } = await supabase
+            .from('Items')
+            .select('*')
+            .in('Id', itemIds);
+
+        if (itemsError) {
+            console.error('Items fetch failed:', itemsError);
+            return res.status(500).json({ message: 'Items error', error: itemsError.message });
+        }
+
+        // 3. Merge data
+        const inventory = inventoryItems.map(invItem => {
+            const itemDetails = items.find(i => i.Id === invItem.ItemId);
+            return {
+                id: invItem.ItemId,
+                name: itemDetails?.Name || 'Unknown Item',
+                type: itemDetails?.Type,
+                rarity: itemDetails?.Rarity,
+                effect: itemDetails?.Effect,
+                iconUrl: itemDetails?.IconUrl,
+                description: itemDetails?.Description,
+                quantity: invItem.Quantity
+            };
+        });
 
         res.json(inventory);
 
     } catch (err) {
         console.error('Get inventory error:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 

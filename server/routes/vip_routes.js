@@ -1,4 +1,4 @@
-const { supabase } = require('./supabase');
+const { supabase } = require('../config/supabase');
 
 // Get user's VIP status
 const getVipStatus = async (req, res) => {

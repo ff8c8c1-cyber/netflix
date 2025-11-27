@@ -2,6 +2,7 @@ import React, { useState, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useGameStore } from './store/useGameStore';
+import { PageSkeleton } from './components/LoadingSkeleton';
 
 // Lazy load components for better performance
 const MainLayout = React.lazy(() => import('./layouts/MainLayout'));
@@ -20,12 +21,13 @@ const HistoryPage = React.lazy(() => import('./pages/HistoryPage'));
 const AIAssistant = React.lazy(() => import('./components/AIAssistant'));
 const WatchPartyPage = React.lazy(() => import('./pages/WatchPartyPage'));
 const VIPPage = React.lazy(() => import('./pages/VIPPage'));
+const AlchemyPage = React.lazy(() => import('./pages/AlchemyPage'));
 
 function App() {
     const [isReady, setIsReady] = useState(false);
     const { initDatabase, initializeAuth } = useGameStore();
 
-    // Simple loading component
+    // Simple loading component (still used for initial app load)
     const LoadingFallback = () => (
         <div className="min-h-screen bg-gradient-to-br from-[#020617] to-[#0a0a0a] flex items-center justify-center">
             <div className="text-center">
@@ -65,7 +67,7 @@ function App() {
     return (
         <ErrorBoundary>
             <BrowserRouter>
-                <Suspense fallback={<LoadingFallback />}>
+                <Suspense fallback={<PageSkeleton />}>
                     <Routes>
                         <Route path="/admin" element={<AdminPage />} />
                         <Route path="/" element={<MainLayout />}>
@@ -79,6 +81,7 @@ function App() {
                             <Route path="pvp" element={<PvPPage />} />
                             <Route path="sect" element={<SectPage />} />
                             <Route path="vip" element={<VIPPage />} />
+                            <Route path="alchemy" element={<AlchemyPage />} />
                             <Route path="favorites" element={<FavoritesPage />} />
                             <Route path="history" element={<HistoryPage />} />
                             <Route path="watch-party/:roomId" element={<WatchPartyPage />} />

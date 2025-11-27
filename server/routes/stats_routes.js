@@ -1,7 +1,7 @@
 // Stats Routes - Using Supabase RPC Functions
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('./supabase');
+const { supabase } = require('../config/supabase');
 
 // Helper function to convert snake_case to camelCase
 function toCamelCase(obj) {

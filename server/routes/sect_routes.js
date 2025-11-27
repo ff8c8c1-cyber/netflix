@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('./supabase');
+const { supabase } = require('../config/supabase');
 
 // Helper: Update Mission Progress
 const updateMissionProgress = async (userId, type, amount = 1) => {

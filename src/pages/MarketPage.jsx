@@ -14,7 +14,7 @@ const MarketPage = () => {
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState([]);
     const [inventory, setInventory] = useState([]);
-    const [activeCategory, setActiveCategory] = useState('consumable');
+    const [activeCategory, setActiveCategory] = useState('pills');
     const [selectedItem, setSelectedItem] = useState(null);
 
     useEffect(() => {
@@ -35,12 +35,24 @@ const MarketPage = () => {
     }, [user]);
 
     const categories = [
-        { id: 'consumable', label: 'Dan Dược', icon: Zap, color: 'text-yellow-400' },
-        { id: 'equipment', label: 'Trang Bị', icon: Shield, color: 'text-blue-400' },
+        { id: 'pills', label: 'Đan Dược', icon: Zap, color: 'text-yellow-400' },
+        { id: 'herbs', label: 'Dược Liệu', icon: Package, color: 'text-green-400' },
         { id: 'special', label: 'Đặc Biệt', icon: Crown, color: 'text-purple-400' }
     ];
 
-    const filteredItems = items.filter(item => item.type === activeCategory);
+    // Filter items based on active category
+    const filteredItems = items.filter(item => {
+        if (activeCategory === 'pills') {
+            // Show all pill types: pill_exp, pill_atk, pill_def, pill_hp, pill_spd, pill_all, pill_breakthrough, pill_special
+            return item.type && item.type.startsWith('pill_');
+        } else if (activeCategory === 'herbs') {
+            return item.type === 'herb';
+        } else if (activeCategory === 'special') {
+            // Show special items and equipment
+            return item.type === 'pill_special' || item.type === 'special' || item.type === 'equipment';
+        }
+        return false;
+    });
 
     const handlePurchase = async (item) => {
         if (!user) {

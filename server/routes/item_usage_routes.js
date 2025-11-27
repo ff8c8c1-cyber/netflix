@@ -164,30 +164,51 @@ app.get('/api/users/:userId/buffs', async (req, res) => {
             .lt('ExpiresAt', new Date().toISOString())
             .not('ExpiresAt', 'is', null);
 
-        // Get active buffs
+        // Get active buffs (removed auto-join which doesn't work)
         const { data: buffs, error } = await supabase
             .from('UserBuffs')
-            .select('*, Items(Name, IconUrl)')
+            .select('*')
             .eq('UserId', userId)
             .eq('Active', true)
             .or(`ExpiresAt.is.null,ExpiresAt.gt.${new Date().toISOString()}`);
 
         if (error) throw error;
 
+        // Get item details manually if buffs exist
+        let itemsMap = {};
+        if (buffs && buffs.length > 0) {
+            const itemIds = buffs.map(b => b.SourceItemId).filter(Boolean);
+            if (itemIds.length > 0) {
+                const { data: itemsData } = await supabase
+                    .from('Items')
+                    .select('Id, Name, IconUrl')
+                    .in('Id', itemIds);
+
+                if (itemsData) {
+                    itemsData.forEach(item => {
+                        itemsMap[item.Id] = item;
+                    });
+                }
+            }
+        }
+
         // Calculate remaining time
-        const buffsList = buffs.map(buff => ({
-            id: buff.Id,
-            type: buff.BuffType,
-            value: buff.BuffValue,
-            isPercentage: buff.IsPercentage,
-            appliedAt: buff.AppliedAt,
-            expiresAt: buff.ExpiresAt,
-            itemName: buff.Items?.Name,
-            itemIcon: buff.Items?.IconUrl,
-            remainingSeconds: buff.ExpiresAt
-                ? Math.max(0, Math.floor((new Date(buff.ExpiresAt) - new Date()) / 1000))
-                : null
-        }));
+        const buffsList = (buffs || []).map(buff => {
+            const item = itemsMap[buff.SourceItemId] || {};
+            return {
+                id: buff.Id,
+                type: buff.BuffType,
+                value: buff.BuffValue,
+                isPercentage: buff.IsPercentage,
+                appliedAt: buff.AppliedAt,
+                expiresAt: buff.ExpiresAt,
+                itemName: item.Name || buff.BuffType.toUpperCase(),
+                itemIcon: item.IconUrl || '',
+                remainingSeconds: buff.ExpiresAt
+                    ? Math.max(0, Math.floor((new Date(buff.ExpiresAt) - new Date()) / 1000))
+                    : null
+            };
+        });
 
         res.json({ buffs: buffsList });
 
