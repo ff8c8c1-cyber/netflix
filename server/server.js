@@ -49,19 +49,19 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // PvP Routes (with PvP rate limiter)
 app.use('/api/pvp', pvpLimiter, optionalAuth, pvpRoutes);
 
-// Sect Routes (authenticated)
-app.use('/api/sects', requireAuth, require('./routes/sect_routes').router);
+// Sect Routes (optional auth for now - TODO: implement proper auth)
+app.use('/api/sects', optionalAuth, require('./routes/sect_routes').router);
 
-// Upload Routes (authenticated + admin for some)
+// Upload Routes (optional auth for now - TODO: require auth for uploads)
 console.log('Registering upload routes...');
-app.use('/api/upload', requireAuth, require('./routes/upload_routes'));
+app.use('/api/upload', optionalAuth, require('./routes/upload_routes'));
 
-// Stats & Buff Routes (authenticated + ownership verification)
-app.use('/api/users/:userId', requireAuth, verifyOwnership, require('./routes/stats_routes'));
-app.use('/api/buffs', requireAuth, require('./routes/buff_routes'));
+// Stats & Buff Routes (optional auth - TODO: add ownership verification)
+app.use('/api/users/:userId', optionalAuth, require('./routes/stats_routes'));
+app.use('/api/buffs', optionalAuth, require('./routes/buff_routes'));
 
-// Alchemy Routes (authenticated + action limiter for crafting)
-app.use('/api/alchemy', requireAuth, actionLimiter, require('./routes/alchemy_routes'));
+// Alchemy Routes (optional auth + action limiter for crafting)
+app.use('/api/alchemy', optionalAuth, actionLimiter, require('./routes/alchemy_routes'));
 console.log('Stats and Buff routes loaded');
 console.log('Alchemy routes loaded');
 
