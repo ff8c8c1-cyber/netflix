@@ -5,6 +5,7 @@ import { useGameStore } from './store/useGameStore';
 import { PageSkeleton } from './components/LoadingSkeleton';
 
 // Lazy load components for better performance
+const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const MainLayout = React.lazy(() => import('./layouts/MainLayout'));
 const HomePage = React.lazy(() => import('./pages/HomePage'));
 const SearchPage = React.lazy(() => import('./pages/SearchPage'));
@@ -69,6 +70,7 @@ function App() {
             <BrowserRouter>
                 <Suspense fallback={<PageSkeleton />}>
                     <Routes>
+                        <Route path="/login" element={<LoginPage />} />
                         <Route path="/admin" element={<AdminPage />} />
                         <Route path="/" element={<MainLayout />}>
                             <Route index element={<HomePage />} />
@@ -78,7 +80,7 @@ function App() {
                             <Route path="watch/:id" element={<WatchPage />} />
                             <Route path="cultivation" element={<CultivationPage />} />
                             <Route path="pet" element={<PetPage />} />
-                            <Route path="pvp" element={<PvPPage />} />
+                            <Route path="pvp" element={<PvP Page />} />
                             <Route path="sect" element={<SectPage />} />
                             <Route path="vip" element={<VIPPage />} />
                             <Route path="alchemy" element={<AlchemyPage />} />
